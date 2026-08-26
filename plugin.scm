@@ -8,13 +8,19 @@
 ;;; /stdlib/config-enum, and primary-selection lookup calls stdlib/find,
 ;;; all via call!) — load it first, same as core:pickers.
 
+;;; Bound once so the plugin name isn't repeated as a string literal at
+;;; every `call!`/error site below.
+(define grep/plugin "cvlmtg/grep.hume")
+
 (unless (member "core:stdlib" (declared-plugins))
-  (error "cvlmtg/grep.hume: requires core:stdlib — (declare-plugin \"core:stdlib\") or (load-plugin \"core:stdlib\") before (load-plugin \"cvlmtg/grep.hume\")"))
+  (error (string-append grep/plugin ": requires core:stdlib — (declare-plugin \"core:stdlib\") or (load-plugin \"core:stdlib\") before (load-plugin \"" grep/plugin "\")")))
 
 ;; ── Config ────────────────────────────────────────────────────────────────────
 ;; `(plugin-config)` only returns the real hash while this body is being
 ;; evaluated — read it now into defines, never from inside a command. See
 ;; README's Config table for what each key controls.
+
+(define grep/cfg (plugin-config))
 
 ;;; `stdlib/config-value`'s shape (present? else default), for the two config
 ;;; keys core:stdlib has no typed accessor for — it covers boolean/string/enum,
@@ -40,20 +46,21 @@
 ;;; configured" via `#:config (hash "program" ...)`.
 (define grep/default-program (or (which "rg") "grep"))
 (define grep/program
-  (call! "stdlib/config-string" "cvlmtg/grep.hume" (plugin-config) "program" grep/default-program))
+  (call! "stdlib/config-string" grep/plugin grep/cfg "program" grep/default-program))
 
 ;;; Fails loudly at load if the resolved binary isn't runnable — otherwise
 ;;; the first sign of trouble is an empty picker from inside a debounce
 ;;; timer, with no link back to the config key that caused it.
 (unless (which grep/program)
-  (error (string-append "cvlmtg/grep.hume: \"program\" (" grep/program
+  (error (string-append grep/plugin ": \"program\" (" grep/program
                          ") is not on PATH — install it, or set \"program\" to one that is")))
 
-;;; Basename of `grep/program`, POSIX separator only — a Windows path is a
-;;; known gap, not solved here (see README's Known limitations). Used to
-;;; tell rg from grep by identity, not by the exact string configured, so
+;;; Basename of `grep/program`, via Steel's `file-name` (`Path::file_name()`)
+;;; — splits on both `/` and `\`, so only a `.exe`-suffixed Windows binary
+;;; still fails to match by identity (see README's Known limitations). Used
+;;; to tell rg from grep by identity, not by the exact string configured, so
 ;;; `"program" "/opt/homebrew/bin/rg"` still means rg.
-(define grep/program-name (car (reverse (split-many grep/program "/"))))
+(define grep/program-name (file-name grep/program))
 
 ;;; Output shape: `'vimgrep-null` is `path\0line:col:text` (rg's `--vimgrep
 ;;; --null`, 1-based byte column, NUL-terminated path — see grep/nul below);
@@ -64,31 +71,41 @@
 ;;; overriding `"args"` to drop `--null` (pair that with `"format" 'vimgrep`).
 (define grep/default-format (if (equal? grep/program-name "rg") 'vimgrep-null 'grep))
 (define grep/format
-  (call! "stdlib/config-enum" "cvlmtg/grep.hume" (plugin-config) "format" grep/default-format
+  (call! "stdlib/config-enum" grep/plugin grep/cfg "format" grep/default-format
          '(vimgrep-null vimgrep grep)))
 
 ;;; Argv placed before the pattern; the pattern and the search root (".")
 ;;; are appended after (see `grep/open!`). `--` before the pattern stops
-;;; either tool from treating a pattern starting with "-" as a flag. `-m`/
-;;; `-M` bound a single search's cost: a metacharacter-heavy pattern typed
-;;; on the way to a narrower one (e.g. "\b" before "\bfoo\b") can otherwise
-;;; match millions of lines before the next keystroke cancels it, and
-;;; HUME's picker never truncates what it's given.
+;;; either tool from treating a pattern starting with "-" as a flag. `-m`
+;;; caps matching lines *per file searched*, not per search as a whole — a
+;;; metacharacter-heavy pattern typed on the way to a narrower one (e.g.
+;;; "\b" before "\bfoo\b") can still match millions of rows across a large
+;;; tree before the next keystroke cancels it; HUME's picker never
+;;; truncates what it's given. `-M` bounds each row's own width instead,
+;;; replacing anything past the limit with a truncated preview
+;;; (`--max-columns-preview`) rather than the omitted-line placeholder rg
+;;; uses by default — real text `grep/byte-col->char-col` can still convert
+;;; a column against.
 (define grep/default-args
   (cond [(equal? grep/format 'vimgrep-null)
-         '("--vimgrep" "--no-heading" "--color" "never" "--null" "-m" "1000" "-M" "512" "--")]
+         '("--vimgrep" "--no-heading" "--color" "never" "--null" "-m" "1000" "-M" "512"
+           "--max-columns-preview" "--")]
         [(equal? grep/format 'vimgrep)
-         '("--vimgrep" "--no-heading" "--color" "never" "-m" "1000" "-M" "512" "--")]
+         '("--vimgrep" "--no-heading" "--color" "never" "-m" "1000" "-M" "512"
+           "--max-columns-preview" "--")]
         [else '("-rnI" "--color=never" "--")]))
 (define grep/args
-  (grep/config-list "cvlmtg/grep.hume" (plugin-config) "args" grep/default-args))
+  (grep/config-list grep/plugin grep/cfg "args" grep/default-args))
 
 ;;; Milliseconds to wait after the last keystroke before re-running the
 ;;; search — keystrokes are human-rate, but a search per keystroke would
 ;;; still spawn and kill a process on every one of them for nothing while
-;;; the user is mid-word.
+;;; the user is mid-word. `live-picker!` itself validates the same
+;;; non-negative-integer shape at spawn time; checking it again here buys
+;;; an earlier, plugin-and-key-named error instead of one from inside
+;;; `live-picker!` with no link back to this config key.
 (define grep/debounce-ms
-  (grep/config-integer "cvlmtg/grep.hume" (plugin-config) "debounce-ms" 120))
+  (grep/config-integer grep/plugin grep/cfg "debounce-ms" 120))
 
 ;; ── Selection seeding ─────────────────────────────────────────────────────────
 
@@ -103,30 +120,24 @@
 ;;; `define-command!`'d, so `call!` can't reach them. `core:lsp` reads this
 ;;; same triple shape the same way.
 (define (grep/primary-selection-text)
-  (let ([sels (current-selections)])
-    (and sels
-         (let* ([primary (call! "stdlib/find" caddr sels)]
-                [anchor (car primary)]
-                [head (cadr primary)])
-           (and (not (= anchor head))
-                (let* ([start (min anchor head)]
-                       [end (max anchor head)]
-                       [start-line (char-index->line start)]
-                       [end-line (char-index->line end)])
-                  (and start-line end-line (= start-line end-line)
-                       (let* ([content-line (- start-line 1)]
-                              [line-offset (line->offset (current-buffer) content-line)]
-                              [line-text (car (buffer-lines (current-buffer)
-                                                             #:start content-line
-                                                             #:end (+ content-line 1)))])
-                         ;; `end` lands ON the line's trailing "\n" for a
-                         ;; whole-line selection ("x"/"X"/Ctrl+x select
-                         ;; through the break), but `buffer-lines` strips
-                         ;; it — clamp to the stripped length instead of
-                         ;; overrunning it.
-                         (substring line-text
-                                    (- start line-offset)
-                                    (min (+ (- end line-offset) 1) (string-length line-text)))))))))))
+  (let* ([sels (current-selections)]
+         [primary (and sels (call! "stdlib/find" caddr sels))]
+         [start (and primary (min (car primary) (cadr primary)))]
+         [end (and primary (max (car primary) (cadr primary)))]
+         [start-line (and start (< start end) (char-index->line start))]
+         [end-line (and start-line (char-index->line end))]
+         [buf (current-buffer)])
+    (and end-line (= start-line end-line)
+         (let* ([content-line (- start-line 1)]
+                [line-offset (line->offset buf content-line)]
+                [line-text (car (buffer-lines buf #:start content-line #:end (+ content-line 1)))])
+           ;; `end` lands ON the line's trailing "\n" for a whole-line
+           ;; selection ("x"/"X"/Ctrl+x select through the break), but
+           ;; `buffer-lines` strips it — clamp to the stripped length
+           ;; instead of overrunning it.
+           (substring line-text
+                      (- start line-offset)
+                      (min (+ (- end line-offset) 1) (string-length line-text)))))))
 
 ;; ── Result-row parsing ────────────────────────────────────────────────────────
 
@@ -136,9 +147,8 @@
   (let ([parts (split-once s sep)])
     (and (list? parts) parts)))
 
-;;; The NUL byte `--null` uses to terminate the path field, built via
-;;; `integer->char` rather than a string escape literal.
-(define grep/nul (string (integer->char 0)))
+;;; The NUL byte `--null` uses to terminate the path field.
+(define grep/nul "\x0;")
 
 ;;; 0-based char index into `line` at 1-based UTF-8 byte offset `byte-col` —
 ;;; `rg --vimgrep`'s column unit ("one byte is equal to one column", rg's
@@ -161,48 +171,32 @@
 ;;; doesn't split into exactly these parts, or either numeric field fails
 ;;; to parse (a malformed row, not a HUME/rg bug).
 (define (grep/parse-vimgrep-shaped-row row path-sep)
-  (let ([path+rest (grep/split-once row path-sep)])
-    (and path+rest
-         (let ([line+rest (grep/split-once (cadr path+rest) ":")])
-           (and line+rest
-                (let ([col+text (grep/split-once (cadr line+rest) ":")])
-                  (and col+text
-                       (let ([line (string->number (car line+rest))]
-                             [byte-col (string->number (car col+text))])
-                         (and (integer? line) (integer? byte-col)
-                              (list (car path+rest) line byte-col (cadr col+text)))))))))))
-
-;;; `path:line:col:text` (rg's `--vimgrep`, no `--null`) — still breaks on a
-;;; path containing ":" the way vim's own errorformat does for this shape
-;;; (README's Known limitations); the default `'vimgrep-null` shape doesn't.
-(define (grep/parse-vimgrep-row row) (grep/parse-vimgrep-shaped-row row ":"))
-
-;;; `path\0line:col:text` (rg's `--vimgrep --null`) — NUL terminates the
-;;; path only, so a colon inside the path itself never breaks the parse.
-(define (grep/parse-vimgrep-null-row row) (grep/parse-vimgrep-shaped-row row grep/nul))
+  (let* ([path+rest (grep/split-once row path-sep)]
+         [line+rest (and path+rest (grep/split-once (cadr path+rest) ":"))]
+         [col+text (and line+rest (grep/split-once (cadr line+rest) ":"))]
+         [line (and col+text (string->number (car line+rest)))]
+         [byte-col (and col+text (string->number (car col+text)))])
+    (and (integer? line) (integer? byte-col)
+         (list (car path+rest) line byte-col (cadr col+text)))))
 
 ;;; `path:line:text` (rg without `--vimgrep`, or GNU grep) → `(path line 0
 ;;; text)` — byte-col 0 stands for "no column reported", read by
 ;;; `grep/byte-col->char-col` as "start of line".
 (define (grep/parse-grep-row row)
-  (let ([path+rest (grep/split-once row ":")])
-    (and path+rest
-         (let ([line+text (grep/split-once (cadr path+rest) ":")])
-           (and line+text
-                (let ([line (string->number (car line+text))])
-                  (and (integer? line)
-                       (list (car path+rest) line 0 (cadr line+text)))))))))
+  (let* ([path+rest (grep/split-once row ":")]
+         [line+text (and path+rest (grep/split-once (cadr path+rest) ":"))]
+         [line (and line+text (string->number (car line+text)))])
+    (and (integer? line)
+         (list (car path+rest) line 0 (cadr line+text)))))
 
+;;; The two vimgrep shapes differ only in what terminates the path field
+;;; (":" for plain `--vimgrep`, NUL for `--vimgrep --null` — see the shape
+;;; enumeration above); pass the separator straight through rather than
+;;; naming a one-line wrapper per shape.
 (define (grep/parse-row row)
-  (cond [(equal? grep/format 'vimgrep-null) (grep/parse-vimgrep-null-row row)]
-        [(equal? grep/format 'vimgrep) (grep/parse-vimgrep-row row)]
+  (cond [(equal? grep/format 'vimgrep-null) (grep/parse-vimgrep-shaped-row row grep/nul)]
+        [(equal? grep/format 'vimgrep) (grep/parse-vimgrep-shaped-row row ":")]
         [else (grep/parse-grep-row row)]))
-
-;;; rg's `-M` (in `grep/default-args`) replaces an over-long line's text
-;;; with this marker, keeping the row's real byte column but nothing for
-;;; `grep/byte-col->char-col` to walk — recognize it and land at column 0
-;;; instead of the placeholder's own (meaningless) length.
-(define grep/omitted-line-marker "[Omitted long line with ")
 
 (define (grep/goto! row)
   (let ([parsed (grep/parse-row row)])
@@ -211,10 +205,7 @@
               [line (cadr parsed)]
               [byte-col (caddr parsed)]
               [text (cadddr parsed)])
-          (goto-location! (list path (- line 1)
-                                (if (starts-with? text grep/omitted-line-marker)
-                                    0
-                                    (grep/byte-col->char-col text byte-col)))))
+          (goto-location! (list path (- line 1) (grep/byte-col->char-col text byte-col))))
         (log! 'error (string-append "live-grep: could not parse result row: " row)))))
 
 ;; ── Open ──────────────────────────────────────────────────────────────────────

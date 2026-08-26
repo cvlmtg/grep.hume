@@ -2,48 +2,25 @@
 
 `cvlmtg/grep.hume` doubles as a minimal reference for a HUME plugin that lives in its own
 repository, installed through
-[PLUM](https://cvlmtg.github.io/HUME/core-plugins.html#plum). Read this alongside its
-`plugin.scm` and `manifest.scm`:
+[PLUM](https://cvlmtg.github.io/HUME/core-plugins.html#plum). The general rules for writing
+one — commands, `call!`, selections, dependencies, `#:config`, and the rest — are in
+[HUME's user manual](https://cvlmtg.github.io/HUME/plugins.html); this file covers only what
+this repo's own layout demonstrates.
 
-- **`plugin.scm`** at the repo root is the only required file — HUME's
-  plugin manager (PLUM) looks for it by that exact name, both to discover an
-  installed plugin and to resolve `(declare-plugin "user/repo")`/
-  `(load-plugin "user/repo")` to a file. `"user/repo"` (this repo:
-  `cvlmtg/grep.hume`) is also the GitHub path PLUM clones from and the
-  install directory name under the data directory.
+- **`plugin.scm`** at the repo root is the only required file. HUME itself resolves
+  `(declare-plugin "cvlmtg/grep.hume")`/`(load-plugin "cvlmtg/grep.hume")` to it directly;
+  PLUM separately probes for the same filename to discover an already-installed plugin on
+  disk. `"cvlmtg/grep.hume"` is also the GitHub path PLUM clones from and the install
+  directory name under the data directory.
 - **`manifest.scm`**, also at the repo root, is optional — it supplies the
-  `#:commands`/`#:events`/`#:languages` a *lazy* `(declare-plugin "user/repo")`
-  (no explicit activation list of its own) should activate on. Without one,
-  a bare `(declare-plugin "user/repo")` has nothing to ever wake it up.
-- **`declare-plugin` vs `load-plugin`**: `declare-plugin` registers the
-  plugin without running its body — it activates later, the first time one
-  of its trigger commands/events/languages fires. `load-plugin` runs the
-  body immediately. A plugin whose only entry point is a key binding it sets
-  itself (like this one's `g /`) needs `load-plugin`, or a user who wants it
-  lazy has to trigger activation some other way first (a typed command, in
-  this plugin's case).
-- **Depending on another plugin**: guard on `(member "core:stdlib"
-  (declared-plugins))` at the top of `plugin.scm` and error out with a
-  message naming both plugins if it's missing — see this plugin's own guard.
-  `declared-plugins` (not `loaded-plugins`) is the right check, since a
-  lazily-declared dependency still counts as present. The guard alone
-  doesn't *activate* it, though — the first `call!` to one of its commands
-  does that inline, and only if that command is one of the dependency's
-  declared activation commands. `call!` on any other name logs an error and
-  returns `#void` instead of raising, so a guard that passes can still be
-  followed by every `call!` silently no-op'ing.
-- **`#:config`**: read `(plugin-config)` into `define`s at the top of
-  `plugin.scm`, while the plugin's own body is being evaluated — it returns
-  an empty hash from anywhere else, including from inside a command this
-  plugin defines. `core:stdlib` ships typed accessors
-  (`stdlib/config-string`/`stdlib/config-boolean`/`stdlib/config-enum`) that
-  raise an error naming the plugin and the key on a bad value, so
-  misconfiguration fails at load rather than wherever the untyped value
-  happens to misbehave later.
-- **Install flow**: `(declare-plugin "user/repo" ...)`/`(load-plugin
-  "user/repo" ...)` in `init.scm` only *declares intent* — nothing is
-  fetched until `:plum-install-plugins` clones it, and nothing in the
-  running editor picks it up until `:reload-config` re-evaluates `init.scm`.
-
-See the full plugin-authoring guide in [HUME's user
-manual](https://cvlmtg.github.io/HUME/plugins.html).
+  `#:commands`/`#:events`/`#:languages` this plugin's *lazy* `(declare-plugin ...)` (no
+  explicit activation list of its own) should activate on.
+- **Why this plugin needs `load-plugin`, not `declare-plugin`**: its only entry point besides
+  its two typed commands is a key binding it sets itself (`g /`), and a plugin's own
+  `bind-key!` call only runs once the plugin's body has actually been evaluated — a lazily
+  `declare-plugin`d install would have no `g /` key until something else triggers
+  activation first. See README's Usage section.
+- **This plugin's `(member "core:stdlib" (declared-plugins))` guard** and its
+  `(plugin-config)` reads (both at the top of `plugin.scm`, evaluated once while the body
+  runs) are worked examples of the manual's "Depending on another plugin" and "Configuring a
+  plugin" sections — read those for the general rules and their caveats.
