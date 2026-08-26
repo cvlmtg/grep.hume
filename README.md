@@ -10,10 +10,7 @@ falling back to `grep`. Any other program can be configured (see below).
 
 ## Requirements
 
-- HUME with `live-picker!` and `picker-source-spawn!`'s `#:ok-exit-codes`
-  (0.12.0 or later — unreleased as of this writing, so `main` is currently
-  the only thing that satisfies it).
-- `core:stdlib` declared or loaded first.
+- HUME 0.12.0 or later.
 - `rg` or `grep` on `PATH` (or another program you configure) — checked at
   load; a missing or misconfigured binary errors immediately instead of
   producing a silently empty picker.
@@ -40,10 +37,15 @@ active.
 
 ## Usage
 
+| Key   | Command                | Effect                                            |
+|-------|------------------------|---------------------------------------------------|
+| `g /` | `live-grep-selection`  | Live-grep, seeded with the primary selection if it's non-collapsed and confined to one line |
+
+Typed commands:
+
 - `:live-grep` — opens empty.
 - `:live-grep TODO` — opens seeded with `TODO`.
-- `:live-grep-selection` (bound to `g /`) — seeded with the primary selection,
-  when it's non-collapsed and confined to one line.
+- `:live-grep-selection`
 
 Inside the picker: type to search (each keystroke re-runs the search after a
 short debounce), `Up`/`Down`/`Ctrl+p`/`Ctrl+n` move the selection,

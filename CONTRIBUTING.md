@@ -64,33 +64,48 @@ diff, the body is not optional.
 
 ## Verification
 
-There is no test suite or CI here — say in the pull request which of these you checked:
+There is no test suite or CI here. Before opening a pull request, manually check the
+items below that your change could plausibly affect, and list them as checked in the
+pull request description. The Unix and Windows sections only apply on that platform;
+check whichever matches the machine you tested on.
 
-1. `:live-grep` opens empty; typing streams results and re-searches after the debounce.
-2. `:live-grep TODO` opens seeded *and* already searching.
-3. `g /` seeds from a one-line, non-collapsed selection; a bare cursor or a multi-line
-   selection opens empty instead.
-4. `Enter` lands on the exact column on a line with multi-byte characters before the match.
-5. `#:config (hash "program" "grep")` parses `path:line:text` rows and lands at line start.
-6. A pattern with no matches leaves `:messages` clean.
-7. `Esc` mid-search kills the running process.
-8. A bad config value (e.g. `"debounce-ms" "fast"` or `"debounce-ms" -1`) errors at load,
-   naming the plugin and the key.
-9. `x` (and `X`, `Ctrl+x`, extend-right onto the newline) then `g /` — seeds from the line,
-   no "index out of bounds" in `:messages`.
-10. A path containing a literal `:` — the row parses and `Enter` lands in it (default
-    `"format"`; not `'vimgrep`, which still has this limitation).
-11. A malformed row (a program emitting a non-numeric line field) — logs the row to
-    `:messages` and jumps nowhere, rather than raising.
-12. `#:config (hash "program" "/full/path/to/rg")` — still uses vimgrep shape and rg argv.
-13. `#:config (hash "program" "nonexistent")` — errors at load naming the plugin and the
-    key, not later from a timer.
-14. A file with a very long minified line — the row shows a truncated preview instead of a
-    placeholder, and `Enter` is instant and lands on the right column for a match within the
-    preview.
-15. Backspace to empty mid-search — rows clear and stay cleared, no stale refill.
-16. `#:config (hash "program" "RG.EXE")` (any casing) — still uses vimgrep
-    shape and rg argv, same as item 12.
+### General
+
+- [ ] `:live-grep` opens empty; typing streams results and re-searches after the debounce.
+- [ ] `:live-grep TODO` opens seeded *and* already searching.
+- [ ] `g /` seeds from a one-line, non-collapsed selection; a bare cursor or a multi-line
+      selection opens empty instead.
+- [ ] `Enter` lands on the exact column on a line with multi-byte characters before the
+      match.
+- [ ] `#:config (hash "program" "grep")` parses `path:line:text` rows and lands at line
+      start.
+- [ ] A pattern with no matches leaves `:messages` clean.
+- [ ] `Esc` mid-search kills the running process.
+- [ ] A bad config value (e.g. `"debounce-ms" "fast"` or `"debounce-ms" -1`) errors at
+      load, naming the plugin and the key.
+- [ ] `x` (and `X`, `Ctrl+x`, extend-right onto the newline) then `g /` — seeds from the
+      line, no "index out of bounds" in `:messages`.
+- [ ] A malformed row (a program emitting a non-numeric line field) — logs the row to
+      `:messages` and jumps nowhere, rather than raising.
+- [ ] `#:config (hash "program" "nonexistent")` — errors at load naming the plugin and
+      the key, not later from a timer.
+- [ ] A file with a very long minified line — the row shows a truncated preview instead
+      of a placeholder, and `Enter` is instant and lands on the right column for a match
+      within the preview.
+- [ ] Backspace to empty mid-search — rows clear and stay cleared, no stale refill.
+
+### Unix (macOS, Linux)
+
+- [ ] A path containing a literal `:` — the row parses and `Enter` lands in it (default
+      `"format"`; not `'vimgrep`, which still has this limitation). Windows file systems
+      reserve `:` in a file name, so this case can't arise there.
+- [ ] `#:config (hash "program" "/full/path/to/rg")` — still uses vimgrep shape and rg
+      argv.
+
+### Windows
+
+- [ ] `#:config (hash "program" "RG.EXE")` (any casing) — still uses vimgrep shape and
+      rg argv.
 
 ## Security
 
