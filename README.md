@@ -70,7 +70,7 @@ Install section above.
 |----------------|---------------------------------------------|--------|
 | `"program"`    | `"rg"` if on `PATH`, else `"grep"`          | The search binary. Checked at load — an unresolvable program errors immediately, naming the plugin and the key. |
 | `"format"`     | `'vimgrep-null` if `"program"` is `"rg"`, else `'grep` | Output shape to parse: `'vimgrep-null`, `'vimgrep`, or `'grep` — see Known limitations for what each means. Set this if you configure a third program, or if you override `"args"` to drop `--null` (pair that with `"format" 'vimgrep`). |
-| `"args"`       | rg: `'("--vimgrep" "--no-heading" "--color" "never" "--null" "-m" "1000" "-M" "512" "--max-columns-preview" "--")`<br>grep: `'("-rnI" "--color=never" "--")` | Argv placed before the pattern. The pattern and the search root (`.`) are always appended after. `-m`/`-M` bound per-file and per-row cost — see Known limitations. |
+| `"args"`       | rg: `'("--vimgrep" "--no-heading" "--color" "never" "--null" "--smart-case" "-m" "1000" "-M" "512" "--max-columns-preview" "--")`<br>grep: `'("-rnI" "-i" "--color=never" "--")` | Argv placed before the pattern. The pattern and the search root (`.`) are always appended after. `-m`/`-M` bound per-file and per-row cost — see Known limitations. |
 | `"debounce-ms"`| `120`                                        | Milliseconds to wait after the last keystroke before re-running the search. Must be a non-negative integer. |
 
 ## Known limitations
@@ -92,6 +92,12 @@ Install section above.
   (`--max-columns-preview`) rather than an unusable placeholder — `Enter`
   lands on the real column for a match within the limit, or the preview's
   end for one beyond it.
+- Case: rg's default `"args"` carry `--smart-case` — an all-lowercase pattern
+  matches either case, and typing any uppercase character narrows the search
+  to that case. `grep` has no such mode, so its default `"args"` carry the
+  blunter `-i` instead — always case-insensitive, with no way to narrow by
+  case. Both are ordinary flags in `"args"`, so overriding that key changes
+  or drops this behavior like any other.
 
 ## Contributing
 

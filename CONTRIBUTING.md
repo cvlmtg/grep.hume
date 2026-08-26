@@ -80,6 +80,8 @@ check whichever matches the machine you tested on.
 - [ ] `#:config (hash "program" "grep")` parses `path:line:text` rows and lands at line
       start.
 - [ ] A pattern with no matches leaves `:messages` clean.
+- [ ] A lowercase pattern matches an uppercase occurrence (`unfin` finds
+      `Unfinished`); adding an uppercase character narrows it again under `rg`.
 - [ ] `Esc` mid-search kills the running process.
 - [ ] A bad config value (e.g. `"debounce-ms" "fast"` or `"debounce-ms" -1`) errors at
       load, naming the plugin and the key.

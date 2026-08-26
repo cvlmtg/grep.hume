@@ -74,12 +74,12 @@
 ;;; actually bound.
 (define grep/default-args
   (cond [(equal? grep/format 'vimgrep-null)
-         '("--vimgrep" "--no-heading" "--color" "never" "--null" "-m" "1000" "-M" "512"
+         '("--vimgrep" "--no-heading" "--color" "never" "--null" "--smart-case" "-m" "1000" "-M" "512"
            "--max-columns-preview" "--")]
         [(equal? grep/format 'vimgrep)
-         '("--vimgrep" "--no-heading" "--color" "never" "-m" "1000" "-M" "512"
+         '("--vimgrep" "--no-heading" "--color" "never" "--smart-case" "-m" "1000" "-M" "512"
            "--max-columns-preview" "--")]
-        [else '("-rnI" "--color=never" "--")]))
+        [else '("-rnI" "-i" "--color=never" "--")]))
 (define grep/args
   (grep/config-list grep/plugin grep/cfg "args" grep/default-args))
 
