@@ -89,6 +89,8 @@ There is no test suite or CI here — say in the pull request which of these you
     placeholder, and `Enter` is instant and lands on the right column for a match within the
     preview.
 15. Backspace to empty mid-search — rows clear and stay cleared, no stale refill.
+16. `#:config (hash "program" "RG.EXE")` (any casing) — still uses vimgrep
+    shape and rg argv, same as item 12.
 
 ## Security
 

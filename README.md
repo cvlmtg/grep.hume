@@ -82,9 +82,6 @@ Install section above.
 - `"format"` is a closed set of those three shapes — a third program needs
   `"args"` set to match one of them, and a program whose output matches
   none of the three can't be configured at all.
-- Identifying `rg` vs. `grep` by basename only handles a Windows binary
-  without its `.exe` suffix — `"program" "rg.exe"` (or a path ending in it)
-  won't match `"rg"` and falls back to the `'grep` shape.
 - `-m` in the default `"args"` caps matching *lines* per file searched, not
   picker rows or the search as a whole — `--vimgrep` still emits one row per
   match on a capped line before the cap takes effect, and a broadly

@@ -47,10 +47,17 @@
   (error (string-append grep/plugin ": \"program\" (" grep/program
                          ") is not on PATH — install it, or set \"program\" to one that is")))
 
-;;; Basename via Steel's `file-name`, to identify rg vs. grep independent of
-;;; how "program" is configured (e.g. a full path) — see README's Known
-;;; limitations for the one case this doesn't catch.
-(define grep/program-name (file-name grep/program))
+;;; Basename with a ".exe" suffix stripped, case-folded only for that check
+;;; — Steel's `which` resolves an unqualified "rg" through Windows' PATHEXT,
+;;; whose default casing is ".EXE", so a case-sensitive strip would miss the
+;;; plugin's own zero-config default there. A bare (non-".exe") basename
+;;; still compares case-sensitively — a program's exact name matters on the
+;;; case-sensitive filesystems where no ".exe" is involved.
+(define grep/program-name
+  (let ([base (file-name grep/program)])
+    (if (ends-with? (string-downcase base) ".exe")
+        (string-downcase (substring base 0 (- (string-length base) 4)))
+        base)))
 
 ;;; Output shape to parse — see README's Config table and Known limitations
 ;;; for what each of the three means. Defaults to whichever shape matches
