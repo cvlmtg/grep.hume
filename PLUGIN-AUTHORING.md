@@ -25,8 +25,13 @@ repository, installed through
 - **Depending on another plugin**: guard on `(member "core:stdlib"
   (declared-plugins))` at the top of `plugin.scm` and error out with a
   message naming both plugins if it's missing — see this plugin's own guard.
-  `declared-plugins` (not `loaded-plugins`) is enough, since it also forces
-  activation.
+  `declared-plugins` (not `loaded-plugins`) is the right check, since a
+  lazily-declared dependency still counts as present. The guard alone
+  doesn't *activate* it, though — the first `call!` to one of its commands
+  does that inline, and only if that command is one of the dependency's
+  declared activation commands. `call!` on any other name logs an error and
+  returns `#void` instead of raising, so a guard that passes can still be
+  followed by every `call!` silently no-op'ing.
 - **`#:config`**: read `(plugin-config)` into `define`s at the top of
   `plugin.scm`, while the plugin's own body is being evaluated — it returns
   an empty hash from anywhere else, including from inside a command this

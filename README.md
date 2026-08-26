@@ -10,10 +10,13 @@ falling back to `grep`. Any other program can be configured (see below).
 
 ## Requirements
 
-- HUME with `picker!`'s `#:query`/`#:on-query-change`/`picker-replace!` and
-  `picker-source-spawn!`'s `#:ok-exit-codes` (0.12.0 or later).
+- HUME with `live-picker!` and `picker-source-spawn!`'s `#:ok-exit-codes`
+  (0.12.0 or later — unreleased as of this writing, so `main` is currently
+  the only thing that satisfies it).
 - `core:stdlib` declared or loaded first.
-- `rg` or `grep` on `PATH` (or another program you configure).
+- `rg` or `grep` on `PATH` (or another program you configure) — checked at
+  load; a missing or misconfigured binary errors immediately instead of
+  producing a silently empty picker.
 
 ## Install
 
@@ -68,18 +71,23 @@ Install section above.
 
 | Key            | Default                                    | Effect |
 |----------------|---------------------------------------------|--------|
-| `"program"`    | `"rg"` if on `PATH`, else `"grep"`          | The search binary. |
-| `"format"`     | `'vimgrep` if `"program"` is `"rg"`, else `'grep` | Output shape to parse: `'vimgrep` is `path:line:col:text` (rg's `--vimgrep`), `'grep` is `path:line:text` (no column). Set this if you configure a third program that isn't rg or grep. |
-| `"args"`       | rg: `'("--vimgrep" "--no-heading" "--color" "never" "--")`<br>grep: `'("-rnI" "--color=never" "--")` | Argv placed before the pattern. The pattern and the search root (`.`) are always appended after. |
-| `"debounce-ms"`| `120`                                        | Milliseconds to wait after the last keystroke before re-running the search. |
+| `"program"`    | `"rg"` if on `PATH`, else `"grep"`          | The search binary. Checked at load — an unresolvable program errors immediately, naming the plugin and the key. |
+| `"format"`     | `'vimgrep-null` if `"program"` is `"rg"`, else `'grep` | Output shape to parse: `'vimgrep-null` is `path\0line:col:text` (rg's `--vimgrep --null`, NUL-terminated path); `'vimgrep` is the same without `--null` (`path:line:col:text` — breaks on a literal `:` in the path); `'grep` is `path:line:text` (no column). Set this if you configure a third program, or if you override `"args"` to drop `--null` (pair that with `"format" 'vimgrep`). |
+| `"args"`       | rg: `'("--vimgrep" "--no-heading" "--color" "never" "--null" "-m" "1000" "-M" "512" "--")`<br>grep: `'("-rnI" "--color=never" "--")` | Argv placed before the pattern. The pattern and the search root (`.`) are always appended after. `-m`/`-M` bound a single search's cost — see Known limitations. |
+| `"debounce-ms"`| `120`                                        | Milliseconds to wait after the last keystroke before re-running the search. Must be a non-negative integer. |
 
 ## Known limitations
 
-- A result whose file path contains a literal `:` breaks the row parse (the
-  same limitation vim's own `errorformat` has for this shape) — the row logs
-  an error instead of jumping anywhere.
+- Using `"format" 'vimgrep` (no `--null`) still breaks on a path containing a
+  literal `:` — the same limitation vim's own `errorformat` has for this
+  shape. The default `'vimgrep-null` shape doesn't have it.
 - Configuring a third program (not `rg` or `grep`) needs `"format"` (and
   usually `"args"`) set to match its output — there's no default for it.
+- `-m` in the default `"args"` caps matching *lines* per file, not picker
+  rows — `--vimgrep` still emits one row per match on a capped line before
+  the cap takes effect. `-M` replaces an over-long line's text with a
+  placeholder; `Enter` on such a row lands at column 0 rather than the
+  (unreported) real column.
 
 ## Contributing
 

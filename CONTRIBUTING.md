@@ -31,8 +31,8 @@ To avoid touching a real `init.scm`, keep a scratch config that just declares
 ## Code standards
 
 - Every top-level `define` is prefixed `grep/` — Steel plugins share one flat namespace.
-- Public plugin API only (`picker!`, `picker-replace!`, `picker-source-spawn!`) — nothing
-  here should need a capability third-party plugins don't have.
+- Public plugin API only (`live-picker!`) — nothing here should need a capability
+  third-party plugins don't have.
 - Reach another plugin through `call!` by command name (e.g. `stdlib/config-string`), never
   by importing its internals.
 - Read `(plugin-config)` into `define`s while the plugin body evaluates, never from inside a
@@ -77,8 +77,19 @@ There is no test suite or CI here — say in the pull request which of these you
 5. `#:config (hash "program" "grep")` parses `path:line:text` rows and lands at line start.
 6. A pattern with no matches leaves `:messages` clean.
 7. `Esc` mid-search kills the running process.
-8. A bad config value (e.g. `"debounce-ms" "fast"`) errors at load, naming the plugin and
-   the key.
+8. A bad config value (e.g. `"debounce-ms" "fast"` or `"debounce-ms" -1`) errors at load,
+   naming the plugin and the key.
+9. `x` (and `X`, `Ctrl+x`, extend-right onto the newline) then `g /` — seeds from the line,
+   no "index out of bounds" in `:messages`.
+10. A path containing a literal `:` — the row parses and `Enter` lands in it (default
+    `"format"`; not `'vimgrep`, which still has this limitation).
+11. A malformed row (a program emitting a non-numeric line field) — logs the row to
+    `:messages` and jumps nowhere, rather than raising.
+12. `#:config (hash "program" "/full/path/to/rg")` — still uses vimgrep shape and rg argv.
+13. `#:config (hash "program" "nonexistent")` — errors at load naming the plugin and the
+    key, not later from a timer.
+14. A file with a very long minified line — `Enter` is instant and lands on the right line.
+15. Backspace to empty mid-search — rows clear and stay cleared, no stale refill.
 
 ## Security
 
