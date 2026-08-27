@@ -157,7 +157,7 @@
               [byte-col (caddr parsed)]
               [text (cadddr parsed)])
           (goto-location! (list path (- line 1) (grep/byte-col->char-col text byte-col))))
-        (log! 'error (string-append "live-grep: could not parse result row: " row)))))
+        (log! 'error (string-append "picker-grep: could not parse result row: " row)))))
 
 ;; ── Open ──────────────────────────────────────────────────────────────────────
 
@@ -183,14 +183,14 @@
 
 ;; ── Commands ──────────────────────────────────────────────────────────────────
 
-(define-command! "live-grep"
-  "Live-grep the working directory in the fuzzy picker. Optional argument seeds the pattern, e.g. :live-grep TODO"
+(define-command! "picker-grep"
+  "Live-grep the working directory in the fuzzy picker. Optional argument seeds the pattern, e.g. :picker-grep TODO"
   (lambda (arg) (grep/open! (if (string? arg) arg ""))))
 
-(define-command! "live-grep-selection"
+(define-command! "picker-grep-selection"
   "Live-grep the working directory, seeded with the primary selection (when it's non-collapsed and confined to one line)."
   (lambda () (grep/open! (or (grep/primary-selection-text) ""))))
 
 ;; ── Keybindings ───────────────────────────────────────────────────────────────
 ;; Extend mode falls through to the normal trie, so 'normal alone covers both.
-(bind-key! 'normal "g /" "live-grep-selection")
+(bind-key! 'normal "g /" "picker-grep-selection")
