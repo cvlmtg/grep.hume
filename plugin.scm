@@ -19,24 +19,6 @@
 
 (define grep/cfg (plugin-config))
 
-;;; core:stdlib has no typed accessor for "list"/"integer" config values
-;;; (only boolean/string/enum), and its untyped helper isn't reachable via
-;;; `call!` (no `define-command!`, no manifest export) — reimplemented here.
-(define (grep/config-value cfg key default)
-  (if (hash-contains? cfg key) (hash-ref cfg key) default))
-
-(define (grep/config-list plugin cfg key default)
-  (let ([v (grep/config-value cfg key default)])
-    (unless (and (list? v) (null? (filter (lambda (x) (not (string? x))) v)))
-      (error (string-append plugin ": \"" key "\" must be a list of strings")))
-    v))
-
-(define (grep/config-integer plugin cfg key default)
-  (let ([v (grep/config-value cfg key default)])
-    (unless (and (integer? v) (>= v 0))
-      (error (string-append plugin ": \"" key "\" must be a non-negative integer")))
-    v))
-
 (define grep/default-program (or (which "rg") "grep"))
 (define grep/program
   (call! "stdlib/config-string" grep/plugin grep/cfg "program" grep/default-program))
@@ -81,28 +63,25 @@
            "--max-columns-preview" "--")]
         [else '("-rnI" "-i" "--color=never" "--")]))
 (define grep/args
-  (grep/config-list grep/plugin grep/cfg "args" grep/default-args))
+  (call! "stdlib/config-list" grep/plugin grep/cfg "args" grep/default-args))
 
 ;;; Keystrokes are human-rate; searching on every one would spawn and kill
 ;;; a process mid-word for nothing. `live-picker!` re-validates this same
 ;;; shape at spawn time — checked here too for an earlier, key-named error.
 (define grep/debounce-ms
-  (grep/config-integer grep/plugin grep/cfg "debounce-ms" 120))
+  (call! "stdlib/config-integer" grep/plugin grep/cfg "debounce-ms" 120 0))
 
 ;; ── Selection seeding ─────────────────────────────────────────────────────────
 
 ;;; Text of the primary selection, or #f if it's collapsed (a bare cursor,
 ;;; or a single-character selection — anchor = head either way, nothing
-;;; distinguishes them) or spans more than one line. `current-selections`
-;;; triples are raw `(anchor head primary?)`; `stdlib/find` locates the
-;;; primary one, but car/cadr below still read the triple directly — the
-;;; named accessors that would avoid that exist in core:stdlib but aren't
-;;; `define-command!`'d, so `call!` can't reach them.
+;;; distinguishes them) or spans more than one line.
 (define (grep/primary-selection-text)
-  (let* ([sels (current-selections)]
-         [primary (and sels (call! "stdlib/find" caddr sels))]
-         [start (and primary (min (car primary) (cadr primary)))]
-         [end (and primary (max (car primary) (cadr primary)))]
+  (let* ([primary (call! "stdlib/primary-selection" (current-selections))]
+         [anchor (and primary (call! "stdlib/selection-anchor" primary))]
+         [head (and primary (call! "stdlib/selection-head" primary))]
+         [start (and primary (min anchor head))]
+         [end (and primary (max anchor head))]
          [start-line (and start (< start end) (char-index->line start))]
          [end-line (and start-line (char-index->line end))]
          [buf (current-buffer)])
