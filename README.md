@@ -2,7 +2,7 @@
 
 Live grep for [HUME](https://github.com/cvlmtg/hume), in the fuzzy picker.
 Open the picker, type a pattern, and results stream in and re-search as you
-type — the same picker `g f`/`g b`/`g m` use, driven live instead of
+type — the same picker `g f`/`g b`/`g m` use, driven live instead of
 filtering a fixed list.
 
 Uses [`rg`](https://github.com/BurntSushi/ripgrep) when it's on `PATH`,
@@ -39,7 +39,7 @@ active.
 
 | Key   | Command                | Effect                                            |
 |-------|------------------------|---------------------------------------------------|
-| `g /` | `picker-grep-selection`  | Live-grep, seeded with the primary selection if it's non-collapsed and confined to one line |
+| `g /` | `picker-grep-selection`  | Live-grep, seeded with the primary selection if it's non-collapsed and confined to one line |
 
 Typed commands:
 
@@ -54,8 +54,8 @@ short debounce), `Up`/`Down`/`Ctrl+p`/`Ctrl+n` move the selection,
 the search if one is still running).
 
 `declare-plugin` above activates lazily, on first use of either command —
-but its own `bind-key!` call (the `g /` binding) only runs once the plugin's
-body has actually been evaluated, so a lazily-declared install has no `g /`
+but its own `bind-key!` call (the `g /` binding) only runs once the plugin's
+body has actually been evaluated, so a lazily-declared install has no `g /`
 key until *something* triggers activation first. Use `load-plugin` instead
 of `declare-plugin` if you want the key available from startup, as in the
 Install section above.
