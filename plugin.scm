@@ -173,7 +173,11 @@
                 #:debounce-ms grep/debounce-ms
                 ;; rg exits 1 for "no matches" — a normal outcome while
                 ;; typing, not a failure worth a message-log entry.
-                #:ok-exit-codes '(0 1)))
+                #:ok-exit-codes '(0 1)
+                ;; A result row is "path:line:col:text" — the path is what
+                ;; the user is scanning for, not the match text trailing it,
+                ;; so an overlong row should drop from the end, not the front.
+                #:truncate 'tail))
 
 ;; ── Commands ──────────────────────────────────────────────────────────────────
 
