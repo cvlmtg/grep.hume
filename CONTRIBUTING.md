@@ -77,6 +77,8 @@ check whichever matches the machine you tested on.
       selection opens empty instead.
 - [ ] `Enter` lands on the exact column on a line with multi-byte characters before the
       match.
+- [ ] A result row reads `path:line:col:text`, with no `<0>` (default `"format"`;
+      the picker shows the NUL path separator as `:`).
 - [ ] `#:config (hash "program" "grep")` parses `path:line:text` rows and lands at line
       start.
 - [ ] A pattern with no matches leaves `:messages` clean.
