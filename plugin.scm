@@ -1,11 +1,4 @@
 ;;; cvlmtg/grep.hume — live grep in the fuzzy picker.
-;;;
-;;; Built entirely from the public plugin API, the same as core:pickers —
-;;; nothing here needs a capability third-party plugins don't have. See
-;;; README.md for usage.
-
-;;; Requires core:stdlib (config validation and primary-selection lookup go
-;;; through it via call!) — load it first.
 
 (define grep/plugin "cvlmtg/grep.hume")
 
@@ -167,8 +160,9 @@
 ;;; query already IS the search rg ran, and fuzzy-filtering matched rows
 ;;; again would drop hits a regex like "foo.*bar" doesn't happen to
 ;;; fuzzy-match. It stops the previous search before the debounce, not
-;;; inside it, so a still-running search never refills a picker the user
-;;; just cleared.
+;;; inside it, so a still-running search never appends stale rows for a
+;;; pattern the query box no longer shows — the rows already on screen
+;;; stay put, marked as refreshing, until the new search delivers its own.
 (define (grep/open! seed)
   (live-picker! (lambda (row) (when row (grep/goto! row)))
                 #:prompt "grep: "
