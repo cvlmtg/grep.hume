@@ -71,8 +71,8 @@ check whichever matches the machine you tested on.
 
 ### General
 
-- [ ] `:picker-grep` opens empty; typing streams results and re-searches after the debounce.
-- [ ] `:picker-grep TODO` opens seeded *and* already searching.
+- [ ] `:grep` opens empty; typing streams results and re-searches after the debounce.
+- [ ] `:grep TODO` opens seeded *and* already searching.
 - [ ] `g /` seeds from a one-line, non-collapsed selection; a bare cursor or a multi-line
       selection opens empty instead.
 - [ ] `Enter` lands on the exact column on a line with multi-byte characters before the

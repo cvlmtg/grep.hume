@@ -181,14 +181,14 @@
 
 ;; ── Commands ──────────────────────────────────────────────────────────────────
 
-(define-command! "picker-grep"
-  "Live-grep the working directory in the fuzzy picker. Optional argument seeds the pattern, e.g. :picker-grep TODO"
-  (lambda (arg) (grep/open! (if (string? arg) arg ""))))
+(define-typed-command! "grep"
+  "Live-grep the working directory in the fuzzy picker. Optional argument seeds the pattern, e.g. :grep TODO"
+  (lambda (arg) (grep/open! (or arg ""))))
 
-(define-command! "picker-grep-selection"
+(define-command! "picker-grep"
   "Live-grep the working directory, seeded with the primary selection (when it's non-collapsed and confined to one line)."
   (lambda () (grep/open! (or (grep/primary-selection-text) ""))))
 
 ;; ── Keybindings ───────────────────────────────────────────────────────────────
 ;; Extend mode falls through to the normal trie, so 'normal alone covers both.
-(bind-key! 'normal "g /" "picker-grep-selection")
+(bind-key! 'normal "g /" "picker-grep")

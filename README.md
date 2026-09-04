@@ -39,13 +39,12 @@ active.
 
 | Key   | Command                | Effect                                            |
 |-------|------------------------|---------------------------------------------------|
-| `g /` | `picker-grep-selection`  | Live-grep, seeded with the primary selection if it's non-collapsed and confined to one line |
+| `g /` | `picker-grep` | Live-grep, seeded with the primary selection if it's non-collapsed and confined to one line |
 
 Typed commands:
 
-- `:picker-grep` — opens empty.
-- `:picker-grep TODO` — opens seeded with `TODO`.
-- `:picker-grep-selection`
+- `:grep` — opens empty.
+- `:grep TODO` — opens seeded with `TODO`.
 
 Inside the picker: type to search (each keystroke re-runs the search after a
 short debounce), `Up`/`Down`/`Ctrl+p`/`Ctrl+n` move the selection,
