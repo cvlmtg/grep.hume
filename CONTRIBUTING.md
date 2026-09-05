@@ -28,9 +28,14 @@ To avoid touching a real `init.scm`, keep a scratch config that just declares
 `core:stdlib` and loads this plugin, and start HUME with `hume --config ./demo.scm <file>`
 — the data directory still resolves normally, so your checkout is still found.
 
+Editing `plugin.scm` with `core:steel-server` declared in your own `init.scm` gets you
+free-identifier diagnostics for HUME's own builtins (`live-picker!`, `call!`, and the rest) —
+see [Core Plugins](https://cvlmtg.github.io/HUME/core-plugins.html#core-steel-server) for the
+one-time `:steel-server-install`.
+
 ## Code standards
 
-- Every top-level `define` is prefixed `grep/` — Steel plugins share one flat namespace.
+- Every top-level `define` is prefixed `grep/` — everything in this file shares one namespace.
 - Comments explain *why*, never *what*, and stay self-contained — no references to plan
   files or "as discussed". `;;;` documents the definition below it; `;;` marks a section
   banner or an inline aside.
@@ -64,47 +69,27 @@ diff, the body is not optional.
 
 ## Verification
 
-There is no test suite or CI here. Before opening a pull request, manually check the
-items below that your change could plausibly affect, and list them as checked in the
-pull request description. The Unix and Windows sections only apply on that platform;
-check whichever matches the machine you tested on.
+```sh
+./scripts/lint.sh  # manifest.scm/README.md drift, naming convention, whitespace
+./tests/run.sh     # end-to-end, driving a real hume under tmux
+```
 
-### General
+CI (`.github/workflows/ci.yml`) runs the same two scripts against the latest HUME release.
 
-- [ ] `:grep` opens empty; typing streams results and re-searches after the debounce.
-- [ ] `:grep TODO` opens seeded *and* already searching.
-- [ ] `g /` seeds from a one-line, non-collapsed selection; a bare cursor or a multi-line
-      selection opens empty instead.
-- [ ] `Enter` lands on the exact column on a line with multi-byte characters before the
-      match.
-- [ ] A result row reads `path:line:col:text`, with no `<0>` (default `"format"`;
-      the picker shows the NUL path separator as `:`).
-- [ ] `#:config (hash "program" "grep")` parses `path:line:text` rows and lands at line
-      start.
-- [ ] A pattern with no matches leaves `:messages` clean.
-- [ ] A lowercase pattern matches an uppercase occurrence (`unfin` finds
-      `Unfinished`); adding an uppercase character narrows it again under `rg`.
-- [ ] `Esc` mid-search kills the running process.
-- [ ] A bad config value (e.g. `"debounce-ms" "fast"` or `"debounce-ms" -1`) errors at
-      load, naming the plugin and the key.
-- [ ] `x` (and `X`, `Ctrl+x`, extend-right onto the newline) then `g /` — seeds from the
-      line, no "index out of bounds" in `:messages`.
-- [ ] A malformed row (a program emitting a non-numeric line field) — logs the row to
-      `:messages` and jumps nowhere, rather than raising.
-- [ ] `#:config (hash "program" "nonexistent")` — errors at load naming the plugin and
-      the key, not later from a timer.
-- [ ] A file with a very long minified line — the row shows a truncated preview instead
-      of a placeholder, and `Enter` is instant and lands on the right column for a match
-      within the preview.
-- [ ] Backspace to empty mid-search — rows clear and stay cleared, no stale refill.
+`lint.sh` has no dependencies beyond bash/grep/awk. `tests/run.sh` needs `tmux`, plus a
+`hume` binary — the first one found, in order: `$HUME_BIN`, `$HUME_REPO` (built once via
+`cargo build -p hume-editor`), `hume` on `PATH`, or a sibling checkout at `../hume`. See
+[PLUGIN-AUTHORING.md](PLUGIN-AUTHORING.md)'s *Testing a plugin* for how it drives HUME.
 
-### Unix (macOS, Linux)
+The suite covers nearly everything HUME's own plugin API and this plugin's config
+validation can be asserted on: both typed and normal commands, selection seeding
+(including the newline-clamp case), UTF-8 column math, all three output shapes, a
+malformed row, load-time config errors, `Esc` actually killing the spawned search, and a
+truncated display row still parsing from its full untruncated payload. One case runs
+against the real `rg` for `--smart-case`; every other case fixes the search program's
+output via a fixture script, so the suite doesn't drift with `rg`'s own version.
 
-- [ ] A path containing a literal `:` — the row parses and `Enter` lands in it (default
-      `"format"`; not `'vimgrep`, which still has this limitation). Windows file systems
-      reserve `:` in a file name, so this case can't arise there.
-- [ ] `#:config (hash "program" "/full/path/to/rg")` — still uses vimgrep shape and rg
-      argv.
+What's left to check by hand, because it needs a platform this suite doesn't run on:
 
 ### Windows
 

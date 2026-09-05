@@ -1,0 +1,34 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tmux and ripgrep
+        run: sudo apt-get update && sudo apt-get install -y tmux ripgrep
+
+      # No source build: HUME ships a ready-to-run release archive, and
+      # tests/ is a black-box suite that only needs a `hume` binary on
+      # PATH — this also makes README's "HUME 0.12.0 or later" an enforced
+      # claim rather than a comment.
+      - name: Download latest hume release
+        run: |
+          gh release download --repo cvlmtg/hume --pattern '*x86_64-unknown-linux-gnu.tar.gz' --dir /tmp/hume-release
+          mkdir -p /tmp/hume-install
+          tar xzf /tmp/hume-release/*.tar.gz -C /tmp/hume-install --strip-components=1
+          echo "/tmp/hume-install/bin" >> "$GITHUB_PATH"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Lint
+        run: ./scripts/lint.sh
+
+      - name: Test
+        run: ./tests/run.sh

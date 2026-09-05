@@ -24,3 +24,10 @@ this repo's own layout demonstrates.
   `(plugin-config)` reads (both at the top of `plugin.scm`, evaluated once while the body
   runs) are worked examples of the manual's "Depending on another plugin" and "Configuring a
   plugin" sections — read those for the general rules and their caveats.
+- **Testing a plugin**: with no headless plugin-eval mode to drive, `tests/` here scripts
+  the real editor through `tmux` instead — a throwaway `$XDG_DATA_HOME` symlinks the working
+  copy in as the installed plugin, and assertions read `tmux capture-pane` output. Fixture
+  scripts stand in for the real search binary so a test's expected output is exact bytes,
+  not something that can drift out from under it. Copy `tests/lib.sh` and
+  `tests/cases/*.sh`'s shape directly for another plugin; the mechanism has nothing
+  grep.hume-specific in it.
