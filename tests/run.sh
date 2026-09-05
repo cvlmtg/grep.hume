@@ -22,10 +22,14 @@ for case_file in cases/*.sh; do
     name="$(basename "$case_file" .sh)"
     if bash "$case_file"; then
         echo "PASS $name"
-        ((pass++))
+        # Assignment, not `((pass++))` — under this script's inherited
+        # `set -e`, an arithmetic command returns the pre-increment value
+        # as its exit status, so the very first increment (0) reads as a
+        # failure and aborts the whole loop.
+        pass=$((pass + 1))
     else
         echo "FAIL $name"
-        ((fail++))
+        fail=$((fail + 1))
     fi
 done
 

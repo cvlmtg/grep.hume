@@ -5,6 +5,12 @@ on:
     branches: [main]
   pull_request:
 
+env:
+  # Which cvlmtg/hume release the tests run against: a tag ("nightly",
+  # "v0.12.0"), or empty for the newest stable release. This plugin needs
+  # APIs that only nightly ships until 0.12.0 is tagged.
+  HUME_RELEASE: nightly
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -16,11 +22,16 @@ jobs:
 
       # No source build: HUME ships a ready-to-run release archive, and
       # tests/ is a black-box suite that only needs a `hume` binary on
-      # PATH — this also makes README's "HUME 0.12.0 or later" an enforced
-      # claim rather than a comment.
-      - name: Download latest hume release
+      # PATH. tests/lib.sh's hume_resolve enforces README's "HUME 0.12.0
+      # or later" itself, so a stale $HUME_RELEASE fails loudly there
+      # rather than silently here.
+      - name: Download hume release
         run: |
-          gh release download --repo cvlmtg/hume --pattern '*x86_64-unknown-linux-gnu.tar.gz' --dir /tmp/hume-release
+          download=(--repo cvlmtg/hume --pattern '*x86_64-unknown-linux-gnu.tar.gz' --dir /tmp/hume-release)
+          if [[ -n "$HUME_RELEASE" ]]; then
+              download=("$HUME_RELEASE" "${download[@]}")
+          fi
+          gh release download "${download[@]}"
           mkdir -p /tmp/hume-install
           tar xzf /tmp/hume-release/*.tar.gz -C /tmp/hume-install --strip-components=1
           echo "/tmp/hume-install/bin" >> "$GITHUB_PATH"

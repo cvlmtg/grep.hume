@@ -15,8 +15,9 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FIXTURES_DIR="$REPO_ROOT/tests/fixtures"
 
-# The only line to change when copying this scaffolding to another plugin.
+# The two lines to change when copying this scaffolding to another plugin.
 PLUGIN_NAME="cvlmtg/grep.hume"
+MIN_HUME_VERSION="0.12.0" # keep in step with README's "HUME 0.12.0 or later"
 
 # ── Resolving which `hume` to drive ─────────────────────────────────────────
 #
@@ -62,6 +63,24 @@ exec "$bin" "\$@"
 SHIM
     chmod +x "$shim_dir/hume"
     export PATH="$shim_dir:$PATH"
+
+    _hume_check_version "$bin"
+}
+
+# _hume_check_version <bin> — aborts with a clear message if <bin> reports
+# an older version than $MIN_HUME_VERSION, instead of letting an
+# unsupported binary fail in confusing ways (e.g. rejecting --config) that
+# surface downstream as unexplained tmux/session errors in every case.
+_hume_check_version() {
+    local bin="$1" raw version oldest
+    raw="$("$bin" --version)"      # "hume 0.12.0-6cf710e4"
+    version="${raw#* }"            # "0.12.0-6cf710e4"
+    version="${version%%-*}"       # "0.12.0" — strip nightly's commit suffix
+    oldest="$(printf '%s\n%s\n' "$version" "$MIN_HUME_VERSION" | sort -V | head -1)"
+    if [[ "$oldest" != "$MIN_HUME_VERSION" ]]; then
+        echo "tests: $bin is $raw, but these tests need hume $MIN_HUME_VERSION or later" >&2
+        exit 1
+    fi
 }
 
 # ── Per-case session lifecycle ───────────────────────────────────────────────
