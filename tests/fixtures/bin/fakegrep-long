@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+printf 'tests/fixtures/tree/long.txt\x001:91:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaTODO\n'

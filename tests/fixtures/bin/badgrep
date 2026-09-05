@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+printf 'tests/fixtures/tree/utf8.txt\x00notanumber:1:broken row\n'

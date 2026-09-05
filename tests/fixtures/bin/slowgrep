@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+trap 'exit 143' TERM
+sleep 3
+[[ -n "${MARKER_FILE:-}" ]] && echo done > "$MARKER_FILE"

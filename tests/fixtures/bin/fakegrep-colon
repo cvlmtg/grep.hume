@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+printf 'tests/fixtures/tree/weird:file.txt\x001:1:colon path TODO\n'

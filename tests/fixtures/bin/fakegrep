@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Fixture search program: ignores argv/query, emits one fixed vimgrep-null row
+# so the picker parses a byte-exact payload instead of a real search result.
+# Row: path\0line:byte-col:text — byte-col 14 is the 1-based UTF-8 byte offset
+# of "TODO" on line 3, which has a multibyte "é" before it (char index 12).
+printf 'tests/fixtures/tree/utf8.txt\x00%d:%d:%s\n' 3 14 "héllo world TODO"
