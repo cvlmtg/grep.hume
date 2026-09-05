@@ -1,9 +1,7 @@
 # grep.hume
 
 Live grep for [HUME](https://github.com/cvlmtg/hume), in the fuzzy picker.
-Open the picker, type a pattern, and results stream in and re-search as you
-type — the same picker `g f`/`g b`/`g m` use, driven live instead of
-filtering a fixed list.
+Open the picker, type a pattern, and matches appear as you type.
 
 Uses [`rg`](https://github.com/BurntSushi/ripgrep) when it's on `PATH`,
 falling back to `grep`. Any other program can be configured (see below).
@@ -68,21 +66,25 @@ Install section above.
 | Key            | Default                                    | Effect |
 |----------------|---------------------------------------------|--------|
 | `"program"`    | `"rg"` if on `PATH`, else `"grep"`          | The search binary. Checked at load — an unresolvable program errors immediately, naming the plugin and the key. |
-| `"format"`     | `'vimgrep-null` if `"program"` is `"rg"`, else `'grep` | Output shape to parse: `'vimgrep-null`, `'vimgrep`, or `'grep` — see Known limitations for what each means. Set this if you configure a third program, or if you override `"args"` to drop `--null` (pair that with `"format" 'vimgrep`). |
+| `"format"`     | `'vimgrep-null` if `"program"` is `"rg"`, else `'grep` | Output shape to parse: `'vimgrep-null`, `'vimgrep`, or `'grep` — see [Output shapes](#output-shapes). Set this if you configure a third program, or if you override `"args"` to drop `--null` (pair that with `"format" 'vimgrep`). |
 | `"args"`       | rg: `'("--vimgrep" "--no-heading" "--color" "never" "--null" "--smart-case" "-m" "1000" "-M" "512" "--max-columns-preview" "--")`<br>grep: `'("-rnI" "-i" "--color=never" "--")` | Argv placed before the pattern. The pattern and the search root (`.`) are always appended after. `-m`/`-M` bound per-file and per-row cost — see Known limitations. |
 | `"debounce-ms"`| `120`                                        | Milliseconds to wait after the last keystroke before re-running the search. Must be a non-negative integer. |
 
+### Output shapes
+
+- `'vimgrep-null` — `path\0line:col:text` (rg's `--vimgrep --null`,
+  NUL-terminated path).
+- `'vimgrep` — `path:line:col:text` (same without `--null`).
+- `'grep` — `path:line:text` (no column).
+
 ## Known limitations
 
-- Output shapes: `'vimgrep-null` is `path\0line:col:text` (rg's `--vimgrep
-  --null`, NUL-terminated path); `'vimgrep` is the same without `--null`
-  (`path:line:col:text` — breaks on a literal `:` in the path, the same
-  limitation vim's own `errorformat` has for this shape); `'grep` is
-  `path:line:text` (no column). The default `'vimgrep-null` shape has
-  neither limitation.
-- `"format"` is a closed set of those three shapes — a third program needs
-  `"args"` set to match one of them, and a program whose output matches
-  none of the three can't be configured at all.
+- `"format"` is a closed set of three shapes (see [Output
+  shapes](#output-shapes)) — a third program needs `"args"` set to match
+  one of them, and a program whose output matches none of the three can't
+  be configured at all. The `'vimgrep` shape (no `--null`) also breaks on a
+  literal `:` in the path, the same limitation vim's own `errorformat` has
+  for this shape; `'vimgrep-null` doesn't have that problem.
 - `-m` in the default `"args"` caps matching *lines* per file searched, not
   picker rows or the search as a whole — `--vimgrep` still emits one row per
   match on a capped line before the cap takes effect, and a broadly
