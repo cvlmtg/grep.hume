@@ -39,7 +39,10 @@ one-time `:steel-server-install`.
 - Comments explain *why*, never *what*, and stay self-contained — no references to plan
   files or "as discussed". `;;;` documents the definition below it; `;;` marks a section
   banner or an inline aside.
-- If a change relies on a newer HUME API, bump the version in README's **Requirements**.
+- If a change relies on a newer HUME API, bump the version in README's **Requirements** and
+  `tests/lib.sh`'s `MIN_HUME_VERSION` together — one is the claim, the other enforces it. If
+  no tagged stable release ships the API yet, point `ci.yml`'s `HUME_RELEASE` at a channel
+  that does.
 
 The general plugin-authoring rules this repo follows — public API only, reaching another
 plugin through `call!` by command name, reading `(plugin-config)` while the body evaluates,
@@ -74,12 +77,27 @@ diff, the body is not optional.
 ./tests/run.sh     # end-to-end, driving a real hume under tmux
 ```
 
-CI (`.github/workflows/ci.yml`) runs the same two scripts against the latest HUME release.
+CI (`.github/workflows/ci.yml`) runs the same two scripts against the release named by its
+`HUME_RELEASE` env var.
 
 `lint.sh` has no dependencies beyond bash/grep/awk. `tests/run.sh` needs `tmux`, plus a
 `hume` binary — the first one found, in order: `$HUME_BIN`, `$HUME_REPO` (built once via
 `cargo build -p hume-editor`), `hume` on `PATH`, or a sibling checkout at `../hume`. See
 [PLUGIN-AUTHORING.md](PLUGIN-AUTHORING.md)'s *Testing a plugin* for how it drives HUME.
+
+### Minimum HUME version
+
+`tests/lib.sh`'s `MIN_HUME_VERSION` is the one knob for what the suite demands. Whichever
+`hume` the resolution order above finds, `hume_resolve` checks its version against this
+constant once, up front, and aborts with one clear message — a too-old binary otherwise
+fails downstream in unrelated-looking ways (e.g. an older `hume` rejecting `--config` dies
+as an opaque tmux "no server running" error in every case, not a version complaint). Nightly
+builds report a version like `0.12.0-<sha>`; the guard strips the commit suffix, so a
+nightly of the required version still passes.
+
+In CI, `ci.yml`'s `HUME_RELEASE` picks which release gets downloaded: a tag (`nightly`,
+`v0.12.0`), or empty for the newest stable. It's currently `nightly` because this plugin
+uses APIs no tagged stable release ships yet; drop it back to empty once one does.
 
 The suite covers nearly everything HUME's own plugin API and this plugin's config
 validation can be asserted on: both typed and normal commands, selection seeding
