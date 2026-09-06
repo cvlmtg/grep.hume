@@ -189,11 +189,19 @@ start_hume_expect_load_error() {
 
 stop_hume() {
     [[ -n "${SESSION:-}" ]] && tmux kill-session -t "$SESSION" 2>/dev/null
-    # kill-session only closes the pane's pty — hume doesn't reliably exit on
-    # the resulting SIGHUP alone, and a still-running process from a
-    # previous case in the same script has been observed to steal keys sent
-    # to the next one's brand new session. Wait briefly for it to exit; force
-    # it if it hasn't.
+    # kill-session only closes the pane's pty. hume handles the resulting
+    # SIGHUP: it asks its main loop to quit, then force-exits after a ~3s
+    # grace window if that request goes unobserved. A build on termina
+    # 0.3.3 could spin out that whole window on macOS — a pty slave whose
+    # master closed reads EOF, not an error, pinning the main loop's reader
+    # deaf to the quit request — but termina 0.4.0 fixes this upstream, and
+    # a current hume now exits within tens of milliseconds (confirmed
+    # empirically via this harness). The wait/force-kill below stays anyway:
+    # CI pins a specific hume release (`$HUME_RELEASE`) that may predate the
+    # fix, and this also covers any other reason the process fails to exit
+    # promptly. A still-running process from a previous case in the same
+    # script has been observed to steal keys sent to the next one's brand
+    # new session. Wait briefly for it to exit; force it if it hasn't.
     if [[ -n "${PANE_PID:-}" ]] && kill -0 "$PANE_PID" 2>/dev/null; then
         kill -TERM "$PANE_PID" 2>/dev/null || true
         for _ in 1 2 3 4 5; do
