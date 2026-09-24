@@ -8,7 +8,7 @@ falling back to `grep`. Any other program can be configured (see below).
 
 ## Requirements
 
-- HUME 0.12.0 or later.
+- HUME 0.13.0 or later.
 - `rg` or `grep` on `PATH` (or another program you configure) — checked at
   load; a missing or misconfigured binary errors immediately instead of
   producing a silently empty picker.

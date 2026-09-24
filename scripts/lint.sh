@@ -3,6 +3,7 @@
 # - manifest.scm's activation lists match plugin.scm's actual command
 #   registrations (both directions)
 # - README's Config table matches the keys plugin.scm actually reads
+# - README's Requirements version matches tests/lib.sh's MIN_HUME_VERSION
 # - every top-level define uses this plugin's naming prefix
 # - no tabs or trailing whitespace in a .scm file.
 set -euo pipefail
@@ -107,6 +108,13 @@ diff_sets "README Config table" \
     "is documented but plugin.scm never reads it via stdlib/config-*" \
     "is read via stdlib/config-* but missing from README's Config table" \
     "$readme_keys" "$plugin_keys"
+
+# --- README's Requirements version vs tests/lib.sh's MIN_HUME_VERSION ------
+min_version="$(grep -oE '^MIN_HUME_VERSION="[^"]*"' tests/lib.sh | grep -oE '"[^"]*"' | tr -d '"')"
+readme_version="$(grep -oE '^- HUME [0-9]+\.[0-9]+\.[0-9]+ or later\.' README.md | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
+if [[ "$min_version" != "$readme_version" ]]; then
+    note "README Requirements says HUME $readme_version, but tests/lib.sh's MIN_HUME_VERSION is $min_version"
+fi
 
 # --- every top-level define uses $PREFIX ------------------------------------
 # Matches both (define name ...) and the (define (name args) ...) shorthand

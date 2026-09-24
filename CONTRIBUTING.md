@@ -39,10 +39,10 @@ one-time `:steel-server-install`.
 - Comments explain *why*, never *what*, and stay self-contained — no references to plan
   files or "as discussed". `;;;` documents the definition below it; `;;` marks a section
   banner or an inline aside.
-- If a change relies on a newer HUME API, bump the version in README's **Requirements** and
-  `tests/lib.sh`'s `MIN_HUME_VERSION` together — one is the claim, the other enforces it. If
-  no tagged stable release ships the API yet, point `ci.yml`'s `HUME_RELEASE` at a channel
-  that does.
+- If a change relies on a newer HUME API, bump `tests/lib.sh`'s `MIN_HUME_VERSION` and
+  README's **Requirements** together — one is the enforcement, the other the claim, and
+  `lint.sh` checks they match. CI picks stable vs. nightly on its own; nothing in `ci.yml`
+  needs editing.
 
 The general plugin-authoring rules this repo follows — public API only, reaching another
 plugin through `call!` by command name, reading `(plugin-config)` while the body evaluates,
@@ -77,8 +77,8 @@ diff, the body is not optional.
 ./tests/run.sh     # end-to-end, driving a real hume under tmux
 ```
 
-CI (`.github/workflows/ci.yml`) runs the same two scripts against the release named by its
-`HUME_RELEASE` env var.
+CI (`.github/workflows/ci.yml`) runs the same two scripts against the newest stable HUME
+release that ships `tests/lib.sh`'s `MIN_HUME_VERSION`, falling back to nightly if none does.
 
 `lint.sh` has no dependencies beyond bash/grep/awk. `tests/run.sh` needs `tmux`, plus a
 `hume` binary — the first one found, in order: `$HUME_BIN`, `$HUME_REPO` (built once via
@@ -95,9 +95,10 @@ as an opaque tmux "no server running" error in every case, not a version complai
 builds report a version like `0.12.0-<sha>`; the guard strips the commit suffix, so a
 nightly of the required version still passes.
 
-In CI, `ci.yml`'s `HUME_RELEASE` picks which release gets downloaded: a tag (`nightly`,
-`v0.12.0`), or empty for the newest stable. It's currently `nightly` because this plugin
-uses APIs no tagged stable release ships yet; drop it back to empty once one does.
+In CI, `ci.yml`'s download step derives the release to fetch from the same constant: it
+checks whether `cvlmtg/hume` has a tag matching `v$MIN_HUME_VERSION` and downloads that
+stable release if so, or `nightly` if not. Once HUME tags the required version, CI picks it
+up automatically — no `ci.yml` edit needed.
 
 The suite covers nearly everything HUME's own plugin API and this plugin's config
 validation can be asserted on: both typed and normal commands, selection seeding

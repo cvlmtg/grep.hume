@@ -5,12 +5,6 @@ on:
     branches: [main]
   pull_request:
 
-env:
-  # Which hume release the tests run against: a tag ("nightly", "v0.12.0"),
-  # or empty for the newest stable release. Pin a channel here when the
-  # plugin needs APIs no tagged stable release ships yet.
-  HUME_RELEASE: nightly
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -22,14 +16,20 @@ jobs:
 
       # No source build: HUME ships a ready-to-run release archive, and
       # tests/ is a black-box suite that only needs a `hume` binary on
-      # PATH. tests/lib.sh's hume_resolve enforces the minimum version
-      # itself, so a stale $HUME_RELEASE fails loudly there rather than
-      # silently here.
+      # PATH. Which release gets downloaded follows tests/lib.sh's
+      # MIN_HUME_VERSION (the one place that version is set): the newest
+      # stable release once it ships that version, nightly until then.
+      # tests/lib.sh's hume_resolve still enforces the minimum itself, so a
+      # stale download fails loudly there rather than silently here.
       - name: Download hume release
         run: |
+          min="$(source tests/lib.sh && echo "$MIN_HUME_VERSION")"
+          # separate assignment so a gh/network failure aborts under -e,
+          # rather than silently falling through to nightly
+          tags="$(gh release list --repo cvlmtg/hume --exclude-drafts --exclude-pre-releases --limit 100 --json tagName --jq '.[].tagName')"
           download=(--repo cvlmtg/hume --pattern '*x86_64-unknown-linux-gnu.tar.gz' --dir /tmp/hume-release)
-          if [[ -n "$HUME_RELEASE" ]]; then
-              download=("$HUME_RELEASE" "${download[@]}")
+          if ! grep -qx "v$min" <<<"$tags"; then
+              download=(nightly "${download[@]}") # required version not released yet
           fi
           gh release download "${download[@]}"
           mkdir -p /tmp/hume-install

@@ -17,7 +17,7 @@ FIXTURES_DIR="$REPO_ROOT/tests/fixtures"
 
 # The two lines to change when copying this scaffolding to another plugin.
 PLUGIN_NAME="cvlmtg/grep.hume"
-MIN_HUME_VERSION="0.12.0" # keep in step with README's Requirements section
+MIN_HUME_VERSION="0.13.0" # keep in step with README's Requirements section
 
 # ── Resolving which `hume` to drive ─────────────────────────────────────────
 #
@@ -197,8 +197,8 @@ stop_hume() {
     # deaf to the quit request — but termina 0.4.0 fixes this upstream, and
     # a current hume now exits within tens of milliseconds (confirmed
     # empirically via this harness). The wait/force-kill below stays anyway:
-    # CI pins a specific hume release (`$HUME_RELEASE`) that may predate the
-    # fix, and this also covers any other reason the process fails to exit
+    # CI may run against an older hume release that predates the fix, and
+    # this also covers any other reason the process fails to exit
     # promptly. A still-running process from a previous case in the same
     # script has been observed to steal keys sent to the next one's brand
     # new session. Wait briefly for it to exit; force it if it hasn't.
