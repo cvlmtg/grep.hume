@@ -69,19 +69,18 @@
 ;;; Text of the primary selection, or #f if it's collapsed (a bare cursor,
 ;;; or a single-character selection — anchor = head either way, nothing
 ;;; distinguishes them) or spans more than one line.
-(define (grep/primary-selection-text)
-  (let* ([primary (call! "stdlib/primary-selection" (current-selections))]
+(define (grep/primary-selection-text bid)
+  (let* ([primary (call! "stdlib/primary-selection" (buffer-selections bid))]
          [anchor (and primary (call! "stdlib/selection-anchor" primary))]
          [head (and primary (call! "stdlib/selection-head" primary))]
          [start (and primary (min anchor head))]
          [end (and primary (max anchor head))]
-         [start-line (and start (< start end) (char-index->line start))]
-         [end-line (and start-line (char-index->line end))]
-         [buf (current-buffer)])
+         [start-line (and start (< start end) (offset->line bid start))]
+         [end-line (and start-line (offset->line bid end))])
     (and end-line (= start-line end-line)
          (let* ([content-line (- start-line 1)]
-                [line-offset (line->offset buf content-line)]
-                [line-text (car (buffer-lines buf #:start content-line #:end (+ content-line 1)))])
+                [line-offset (line->offset bid content-line)]
+                [line-text (car (buffer-lines bid #:start content-line #:end (+ content-line 1)))])
            ;; `end` lands ON the line's trailing "\n" for a whole-line
            ;; selection ("x"/"X"/Ctrl+x select through the break), but
            ;; `buffer-lines` strips it — clamp to the stripped length
@@ -183,11 +182,11 @@
 
 (define-typed-command! "grep"
   "Live-grep the working directory in the fuzzy picker. Optional argument seeds the pattern, e.g. :grep TODO"
-  (lambda (arg) (grep/open! (or arg ""))))
+  (lambda (bid arg) (grep/open! (or arg ""))))
 
 (define-command! "picker-grep"
   "Live-grep the working directory, seeded with the primary selection (when it's non-collapsed and confined to one line)."
-  (lambda () (grep/open! (or (grep/primary-selection-text) ""))))
+  (lambda (bid) (grep/open! (or (grep/primary-selection-text bid) ""))))
 
 ;; ── Keybindings ───────────────────────────────────────────────────────────────
 ;; Extend mode falls through to the normal trie, so 'normal alone covers both.
