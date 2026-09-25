@@ -47,8 +47,10 @@ Typed commands:
 Inside the picker: type to search (each keystroke re-runs the search after a
 short debounce), `Up`/`Down`/`Ctrl+p`/`Ctrl+n` move the selection,
 `PageUp`/`PageDown`/`Ctrl+u`/`Ctrl+d` page it, `Backspace` edits the pattern,
-`Enter` jumps to the match's file, line, and column, `Esc` dismisses (killing
-the search if one is still running).
+`Enter`/`Ctrl+o` jumps to the match's file, line, and column in the current
+pane, `Ctrl+t`/`Ctrl+v`/`Ctrl+s` jump there in a new tab, a side-by-side
+split, or a stacked split instead, `Esc` dismisses (killing the search if
+one is still running).
 
 `declare-plugin` above activates lazily, on first use of either command —
 but its own `bind-key!` call (the `g /` binding) only runs once the plugin's

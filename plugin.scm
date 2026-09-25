@@ -69,18 +69,18 @@
 ;;; Text of the primary selection, or #f if it's collapsed (a bare cursor,
 ;;; or a single-character selection — anchor = head either way, nothing
 ;;; distinguishes them) or spans more than one line.
-(define (grep/primary-selection-text bid)
-  (let* ([primary (call! "stdlib/primary-selection" (buffer-selections bid))]
+(define (grep/primary-selection-text pane)
+  (let* ([primary (call! "stdlib/primary-selection" (buffer-selections pane))]
          [anchor (and primary (call! "stdlib/selection-anchor" primary))]
          [head (and primary (call! "stdlib/selection-head" primary))]
          [start (and primary (min anchor head))]
          [end (and primary (max anchor head))]
-         [start-line (and start (< start end) (offset->line bid start))]
-         [end-line (and start-line (offset->line bid end))])
+         [start-line (and start (< start end) (offset->line pane start))]
+         [end-line (and start-line (offset->line pane end))])
     (and end-line (= start-line end-line)
          (let* ([content-line (- start-line 1)]
-                [line-offset (line->offset bid content-line)]
-                [line-text (car (buffer-lines bid #:start content-line #:end (+ content-line 1)))])
+                [line-offset (line->offset pane content-line)]
+                [line-text (car (buffer-lines pane #:start content-line #:end (+ content-line 1)))])
            ;; `end` lands ON the line's trailing "\n" for a whole-line
            ;; selection ("x"/"X"/Ctrl+x select through the break), but
            ;; `buffer-lines` strips it — clamp to the stripped length
@@ -141,15 +141,19 @@
         [(equal? grep/format 'vimgrep) (grep/parse-vimgrep-shaped-row row ":")]
         [else (grep/parse-grep-row row)]))
 
+;;; #f (Esc, or a placement action skipping an empty/not-yet-matching
+;;; picker — see `stdlib/buffer-actions`) is a no-op, not an error: only a
+;;; row that made it past that guard and still fails to parse is logged.
 (define (grep/goto! row)
-  (let ([parsed (grep/parse-row row)])
-    (if parsed
-        (let ([path (car parsed)]
-              [line (cadr parsed)]
-              [byte-col (caddr parsed)]
-              [text (cadddr parsed)])
-          (goto-location! (list path (- line 1) (grep/byte-col->char-col text byte-col))))
-        (log! 'error (string-append "picker-grep: could not parse result row: " row)))))
+  (when row
+    (let ([parsed (grep/parse-row row)])
+      (if parsed
+          (let ([path (car parsed)]
+                [line (cadr parsed)]
+                [byte-col (caddr parsed)]
+                [text (cadddr parsed)])
+            (goto-location! (focused-pane) (list path (- line 1) (grep/byte-col->char-col text byte-col))))
+          (log! 'error (string-append "picker-grep: could not parse result row: " row))))))
 
 ;; ── Open ──────────────────────────────────────────────────────────────────────
 
@@ -162,8 +166,8 @@
 ;;; inside it, so a still-running search never appends stale rows for a
 ;;; pattern the query box no longer shows — the rows already on screen
 ;;; stay put, marked as refreshing, until the new search delivers its own.
-(define (grep/open! seed)
-  (live-picker! (lambda (row) (when row (grep/goto! row)))
+(define (grep/open! pane seed)
+  (live-picker! pane grep/goto!
                 #:prompt "grep: "
                 #:query seed
                 #:command (lambda (query)
@@ -176,17 +180,22 @@
                 ;; A result row is "path:line:col:text" — the path is what
                 ;; the user is scanning for, not the match text trailing it,
                 ;; so an overlong row should drop from the end, not the front.
-                #:truncate 'tail))
+                #:truncate 'tail
+                ;; Ctrl-o/t/v/s open the match in the current pane, a new
+                ;; tab, a side-by-side split, or a stacked split —
+                ;; `grep/goto!` always targets `(focused-pane)`, which
+                ;; these place and focus before calling it.
+                #:actions (call! "stdlib/buffer-actions" grep/goto!)))
 
 ;; ── Commands ──────────────────────────────────────────────────────────────────
 
 (define-typed-command! "grep"
   "Live-grep the working directory in the fuzzy picker. Optional argument seeds the pattern, e.g. :grep TODO"
-  (lambda (bid arg) (grep/open! (or arg ""))))
+  (lambda (pane arg) (grep/open! pane (or arg ""))))
 
 (define-command! "picker-grep"
   "Live-grep the working directory, seeded with the primary selection (when it's non-collapsed and confined to one line)."
-  (lambda (bid) (grep/open! (or (grep/primary-selection-text bid) ""))))
+  (lambda (pane) (grep/open! pane (or (grep/primary-selection-text pane) ""))))
 
 ;; ── Keybindings ───────────────────────────────────────────────────────────────
 ;; Extend mode falls through to the normal trie, so 'normal alone covers both.

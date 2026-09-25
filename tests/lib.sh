@@ -179,12 +179,19 @@ _wait_settled() {
 # start_hume_expect_load_error <config-template> <input-file> [NAME=value ...]
 #
 # For a config expected to fail plugin load (a bad "program"/"debounce-ms"):
-# the statusline shows the load error instead of the filename, so there's no
-# basename to wait for. Waits for "Error:" instead — the prefix HUME's own
-# config-load failure banner uses.
+# these configs never call configure-statusline!, so there's no filename to
+# wait for. Waits for the transient "plugin '...' failed to load: ..." flash
+# instead (truncated to the terminal width, but a stable readiness signal
+# that init.scm finished evaluating), then opens `:messages` — the flash
+# itself is too narrow to assert the plugin's own error text against, but
+# `:messages` keeps the same entry in full, wrapped to fit. A case still
+# asserts its own text with `wait_for`, not `wait_for_status`, once this
+# returns: the text now lives in the buffer body, not the bottom row.
 start_hume_expect_load_error() {
     _launch_hume "$@"
-    wait_for_status "Error:" 10
+    wait_for_status "failed to load" 10
+    send ":messages" Enter
+    wait_for "failed to load" 10
 }
 
 stop_hume() {
