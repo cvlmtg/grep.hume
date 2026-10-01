@@ -3,7 +3,7 @@
 (define grep/plugin "cvlmtg/grep.hume")
 
 (unless (member "core:stdlib" (declared-plugins))
-  (error (string-append grep/plugin ": requires core:stdlib — (declare-plugin \"core:stdlib\") or (load-plugin \"core:stdlib\") before (load-plugin \"" grep/plugin "\")")))
+  (error (string-append grep/plugin ": requires core:stdlib — (declare-plugin! \"core:stdlib\") or (load-plugin! \"core:stdlib\") before (load-plugin! \"" grep/plugin "\")")))
 
 ;; ── Config ────────────────────────────────────────────────────────────────────
 ;; `(plugin-config)` only returns the real hash while this body is being
@@ -71,23 +71,22 @@
 ;;; distinguishes them) or spans more than one line.
 (define (grep/primary-selection-text pane)
   (let* ([primary (call! "stdlib/primary-selection" (buffer-selections pane))]
-         [anchor (and primary (call! "stdlib/selection-anchor" primary))]
-         [head (and primary (call! "stdlib/selection-head" primary))]
-         [start (and primary (min anchor head))]
-         [end (and primary (max anchor head))]
-         [start-line (and start (< start end) (offset->line pane start))]
-         [end-line (and start-line (offset->line pane end))])
-    (and end-line (= start-line end-line)
-         (let* ([content-line (- start-line 1)]
-                [line-offset (line->offset pane content-line)]
-                [line-text (car (buffer-lines pane #:start content-line #:end (+ content-line 1)))])
-           ;; `end` lands ON the line's trailing "\n" for a whole-line
-           ;; selection ("x"/"X"/Ctrl+x select through the break), but
-           ;; `buffer-lines` strips it — clamp to the stripped length
-           ;; instead of overrunning it.
-           (substring line-text
-                      (- start line-offset)
-                      (min (+ (- end line-offset) 1) (string-length line-text)))))))
+         [collapsed? (or (not primary)
+                         (= (call! "stdlib/selection-anchor" primary)
+                            (call! "stdlib/selection-head" primary)))])
+    (and (not collapsed?)
+         (let* ([start (hash-ref primary 'start)]
+                [end (hash-ref primary 'end)]
+                [line (offset->line pane start)])
+           (and (= line (offset->line pane (- end 1)))
+                (let* ([line-offset (line->offset pane line)]
+                       [line-text (car (buffer-lines pane #:start line #:end (+ line 1)))])
+                  ;; A whole-line selection ("x"/"X"/Ctrl+x) covers the
+                  ;; line's trailing "\n", but `buffer-lines` strips it —
+                  ;; clamp to the stripped length instead of overrunning it.
+                  (substring line-text
+                             (- start line-offset)
+                             (min (- end line-offset) (string-length line-text)))))))))
 
 ;; ── Result-row parsing ────────────────────────────────────────────────────────
 
@@ -152,7 +151,10 @@
                 [line (cadr parsed)]
                 [byte-col (caddr parsed)]
                 [text (cadddr parsed)])
-            (goto-location! (focused-pane) (list path (- line 1) (grep/byte-col->char-col text byte-col))))
+            (goto-location! (focused-pane)
+                            (hash 'target path
+                                  'line (- line 1)
+                                  'char-col (grep/byte-col->char-col text byte-col))))
           (log! 'error (string-append "picker-grep: could not parse result row: " row))))))
 
 ;; ── Open ──────────────────────────────────────────────────────────────────────

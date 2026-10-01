@@ -8,7 +8,7 @@ falling back to `grep`. Any other program can be configured (see below).
 
 ## Requirements
 
-- HUME 0.13.0 or later.
+- HUME 0.14.0 or later.
 - `rg` or `grep` on `PATH` (or another program you configure) — checked at
   load; a missing or misconfigured binary errors immediately instead of
   producing a silently empty picker.
@@ -16,8 +16,8 @@ falling back to `grep`. Any other program can be configured (see below).
 ## Install
 
 ```scheme
-(declare-plugin "core:stdlib")
-(load-plugin "cvlmtg/grep.hume")
+(declare-plugin! "core:stdlib")
+(load-plugin! "cvlmtg/grep.hume")
 ```
 
 Then, from inside HUME:
@@ -52,17 +52,17 @@ pane, `Ctrl+t`/`Ctrl+v`/`Ctrl+s` jump there in a new tab, a side-by-side
 split, or a stacked split instead, `Esc` dismisses (killing the search if
 one is still running).
 
-`declare-plugin` above activates lazily, on first use of either command —
+`declare-plugin!` above activates lazily, on first use of either command —
 but its own `bind-key!` call (the `g /` binding) only runs once the plugin's
 body has actually been evaluated, so a lazily-declared install has no `g /`
-key until *something* triggers activation first. Use `load-plugin` instead
-of `declare-plugin` if you want the key available from startup, as in the
+key until *something* triggers activation first. Use `load-plugin!` instead
+of `declare-plugin!` if you want the key available from startup, as in the
 Install section above.
 
 ## Config
 
 ```scheme
-(load-plugin "cvlmtg/grep.hume" #:config (hash "program" "grep"))
+(load-plugin! "cvlmtg/grep.hume" #:config (hash "program" "grep"))
 ```
 
 | Key            | Default                                    | Effect |

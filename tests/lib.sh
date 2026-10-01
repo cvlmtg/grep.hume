@@ -17,7 +17,7 @@ FIXTURES_DIR="$REPO_ROOT/tests/fixtures"
 
 # The two lines to change when copying this scaffolding to another plugin.
 PLUGIN_NAME="cvlmtg/grep.hume"
-MIN_HUME_VERSION="0.13.0" # keep in step with README's Requirements section
+MIN_HUME_VERSION="0.14.0" # keep in step with README's Requirements section
 
 # ── Resolving which `hume` to drive ─────────────────────────────────────────
 #

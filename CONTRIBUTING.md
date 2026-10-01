@@ -9,7 +9,7 @@ By contributing you agree that your work is licensed under the [MIT License](LIC
 
 ## Getting set up
 
-`(load-plugin "cvlmtg/grep.hume")` resolves one path only, so a working copy has to be
+`(load-plugin! "cvlmtg/grep.hume")` resolves one path only, so a working copy has to be
 reachable there:
 
 | Platform | `<data>/plugins/cvlmtg/grep.hume/` resolves under |
