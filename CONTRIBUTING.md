@@ -73,7 +73,7 @@ diff, the body is not optional.
 ## Verification
 
 ```sh
-./scripts/lint.sh  # manifest.scm/README.md drift, naming convention, whitespace
+./scripts/lint.sh  # README.md drift, naming convention, whitespace
 ./tests/run.sh     # end-to-end, driving a real hume under tmux
 ```
 

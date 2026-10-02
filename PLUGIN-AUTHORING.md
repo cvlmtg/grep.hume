@@ -8,18 +8,15 @@ one — commands, `call!`, selections, dependencies, `#:config`, and the rest �
 this repo's own layout demonstrates.
 
 - **`plugin.scm`** at the repo root is the only required file. HUME itself resolves
-  `(declare-plugin! "cvlmtg/grep.hume")`/`(load-plugin! "cvlmtg/grep.hume")` to it directly;
+  `(load-plugin! "cvlmtg/grep.hume")` to it directly;
   PLUM separately probes for the same filename to discover an already-installed plugin on
   disk. `"cvlmtg/grep.hume"` is also the GitHub path PLUM clones from and the install
   directory name under the data directory.
-- **`manifest.scm`**, also at the repo root, is optional — it supplies the
-  `#:commands`/`#:events`/`#:languages` this plugin's *lazy* `(declare-plugin! ...)` (no
-  explicit activation list of its own) should activate on.
-- **Why this plugin needs `load-plugin!`, not `declare-plugin!`**: its only entry point besides
-  its two typed commands is a key binding it sets itself (`g /`), and a plugin's own
-  `bind-key!` call only runs once the plugin's body has actually been evaluated — a lazily
-  `declare-plugin!`d install would have no `g /` key until something else triggers
-  activation first. See README's Usage section.
+- **No `manifest.scm`**: a plugin without one loads eagerly, which this plugin needs — its
+  only entry point besides its two typed commands is a key binding it sets itself (`g /`),
+  and a plugin's own `bind-key!` call only runs once the plugin's body has been evaluated.
+  A `manifest.scm` would make `load-plugin!` lazy and leave `g /` unbound until a command
+  triggered activation.
 - **This plugin's `(member "core:stdlib" (declared-plugins))` guard** and its
   `(plugin-config)` reads (both at the top of `plugin.scm`, evaluated once while the body
   runs) are worked examples of the manual's "Depending on another plugin" and "Configuring a

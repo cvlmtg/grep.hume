@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 # invariants this repo documents but nothing enforces:
-# - manifest.scm's activation lists match plugin.scm's actual command
-#   registrations (both directions)
 # - README's Config table matches the keys plugin.scm actually reads
 # - README's Requirements version matches tests/lib.sh's MIN_HUME_VERSION
 # - every top-level define uses this plugin's naming prefix
@@ -16,32 +14,6 @@ fail=0
 note() {
     echo "lint: $1" >&2
     fail=1
-}
-
-# extract_list <file> <marker> — the quoted strings inside the '(...)  list
-# that starts at the first line containing <marker>, through the first line
-# closing it with a ')'. Good enough for this repo's own simple, unnested
-# lists; not a general Scheme reader.
-extract_list() {
-    local file="$1" marker="$2"
-    grep -v '^[[:space:]]*;' "$file" | awk -v marker="$marker" '
-        index($0, marker) { inlist = 1 }
-        inlist {
-            buf = buf $0 "\n"
-            if (index($0, ")") > 0) { print buf; exit }
-        }
-    ' | grep -oE '"[^"]*"' | tr -d '"'
-}
-
-# defined_names <marker> — every "name" in a (marker "name" ...) call in
-# plugin.scm, comment lines stripped first so a doc comment mentioning the
-# marker in prose is never mistaken for a call.
-defined_names() {
-    local marker="$1"
-    grep -v '^[[:space:]]*;' plugin.scm \
-        | grep -oE "${marker}[[:space:]]*\"[^\"]*\"" \
-        | grep -oE '"[^"]*"' \
-        | tr -d '"'
 }
 
 diff_sets() {
@@ -81,21 +53,6 @@ diff_sets() {
         fi
     done
 }
-
-# --- manifest.scm's activation lists vs plugin.scm's actual commands -------
-manifest_commands="$(extract_list manifest.scm '#:commands')"
-manifest_typed="$(extract_list manifest.scm '#:typed-commands')"
-plugin_commands="$(defined_names 'define-command!')"
-plugin_typed="$(defined_names 'define-typed-command!')"
-
-diff_sets "manifest.scm #:commands" \
-    "is declared but no define-command! defines it" \
-    "is defined via define-command! but missing from manifest.scm" \
-    "$manifest_commands" "$plugin_commands"
-diff_sets "manifest.scm #:typed-commands" \
-    "is declared but no define-typed-command! defines it" \
-    "is defined via define-typed-command! but missing from manifest.scm" \
-    "$manifest_typed" "$plugin_typed"
 
 # --- README's Config table vs the keys plugin.scm actually reads ----------
 readme_keys="$(grep -oE '^\| `"[a-z-]+"`' README.md | grep -oE '"[a-z-]+"' | tr -d '"')"

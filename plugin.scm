@@ -3,7 +3,7 @@
 (define grep/plugin "cvlmtg/grep.hume")
 
 (unless (member "core:stdlib" (declared-plugins))
-  (error (string-append grep/plugin ": requires core:stdlib — (declare-plugin! \"core:stdlib\") or (load-plugin! \"core:stdlib\") before (load-plugin! \"" grep/plugin "\")")))
+  (error (string-append grep/plugin ": requires core:stdlib — (load-plugin! \"core:stdlib\") before (load-plugin! \"" grep/plugin "\")")))
 
 ;; ── Config ────────────────────────────────────────────────────────────────────
 ;; `(plugin-config)` only returns the real hash while this body is being
@@ -75,8 +75,8 @@
                          (= (call! "stdlib/selection-anchor" primary)
                             (call! "stdlib/selection-head" primary)))])
     (and (not collapsed?)
-         (let* ([start (hash-ref primary 'start)]
-                [end (hash-ref primary 'end)]
+         (let* ([start (call! "stdlib/selection-start" primary)]
+                [end (call! "stdlib/selection-end" primary)]
                 [line (offset->line pane start)])
            (and (= line (offset->line pane (- end 1)))
                 (let* ([line-offset (line->offset pane line)]
