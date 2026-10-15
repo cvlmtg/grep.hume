@@ -15,10 +15,10 @@ wait_for "grep: "
 send "x"
 wait_for "broken row"
 send Enter
-wait_for "picker-grep: could not parse result row"
+wait_for "grep: could not parse result row"
 
 send "l" # dismiss the inline banner
 wait_for_status "error"
 
 send ":messages" Enter
-wait_for "picker-grep: could not parse result row"
+wait_for "grep: could not parse result row"

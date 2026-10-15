@@ -37,7 +37,7 @@ active.
 
 | Key   | Command                | Effect                                            |
 |-------|------------------------|---------------------------------------------------|
-| `g /` | `picker-grep` | Live-grep, seeded with the primary selection if it's non-collapsed and confined to one line |
+| `g /` | `grep/picker` | Live-grep, seeded with the primary selection if it's non-collapsed and confined to one line |
 
 Typed commands:
 

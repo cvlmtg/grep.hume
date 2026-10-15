@@ -155,7 +155,7 @@
                             (hash 'target path
                                   'line (- line 1)
                                   'char-col (grep/byte-col->char-col text byte-col))))
-          (log! 'error (string-append "picker-grep: could not parse result row: " row))))))
+          (log! 'error (string-append "grep: could not parse result row: " row))))))
 
 ;; ── Open ──────────────────────────────────────────────────────────────────────
 
@@ -195,10 +195,10 @@
   "Live-grep the working directory in the fuzzy picker. Optional argument seeds the pattern, e.g. :grep TODO"
   (lambda (pane arg) (grep/open! pane (or arg ""))))
 
-(define-command! "picker-grep"
+(define-command! "grep/picker"
   "Live-grep the working directory, seeded with the primary selection (when it's non-collapsed and confined to one line)."
   (lambda (pane) (grep/open! pane (or (grep/primary-selection-text pane) ""))))
 
 ;; ── Keybindings ───────────────────────────────────────────────────────────────
 ;; Extend mode falls through to the normal trie, so 'normal alone covers both.
-(bind-key! 'normal "g /" "picker-grep")
+(bind-key! 'normal "g /" "grep/picker")
