@@ -78,12 +78,13 @@
                          (= (call! "stdlib/selection-anchor" primary)
                             (call! "stdlib/selection-head" primary)))])
     (and (not collapsed?)
-         (let* ([start (call! "stdlib/selection-start" primary)]
-                [end (call! "stdlib/selection-end" primary)]
-                [line (offset->line pane start)])
-           (and (= line (offset->line pane (- end 1)))
-                (let* ([line-offset (line->offset pane line)]
-                       [line-text (car (buffer-lines pane #:start line #:end (+ line 1)))])
+         (let* ([start (call! "stdlib/selection-start-char" primary)]
+                [end (call! "stdlib/selection-end-char" primary)]
+                [line (char-offset->line pane start)])
+           (and (= line (char-offset->line pane (- end 1)))
+                (let* ([line-offset (line->char-offset pane line)]
+                       [line-text (car (buffer-lines pane
+                                                     #:range (hash 'start-line line 'end-line (+ line 1))))])
                   ;; A whole-line selection ("x"/"X"/Ctrl+x) covers the
                   ;; line's trailing "\n", but `buffer-lines` strips it —
                   ;; clamp to the stripped length instead of overrunning it.
@@ -145,7 +146,9 @@
 
 ;;; #f (Esc, or a placement action skipping an empty/not-yet-matching
 ;;; picker — see `stdlib/buffer-actions`) is a no-op, not an error: only a
-;;; row that made it past that guard and still fails to parse is logged.
+;;; row that made it past that guard and still fails to parse is logged, and
+;;; so is a row whose line is gone from the file (`goto-location!` answers
+;;; #f and moves nothing).
 (define (grep/goto! row)
   (when row
     (let ([parsed (grep/parse-row row)])
@@ -154,10 +157,11 @@
                 [line (cadr parsed)]
                 [byte-col (caddr parsed)]
                 [text (cadddr parsed)])
-            (goto-location! (focused-pane)
-                            (hash 'target path
-                                  'line (- line 1)
-                                  'char-col (grep/byte-col->char-col text byte-col))))
+            (unless (goto-location! (focused-pane)
+                                    (hash 'target path
+                                          'line (- line 1)
+                                          'char-col (grep/byte-col->char-col text byte-col)))
+              (log! 'warn (string-append "grep: " path " has no line " (number->string line)))))
           (log! 'error (string-append "grep: could not parse result row: " row))))))
 
 ;; ── Open ──────────────────────────────────────────────────────────────────────
