@@ -2,6 +2,9 @@
 
 (define grep/plugin "cvlmtg/grep.hume")
 
+(unless (hume-version>=? 0 16 0)
+  (error (string-append grep/plugin ": requires HUME 0.16.0 or later")))
+
 (unless (member "core:stdlib" (declared-plugins))
   (error (string-append grep/plugin ": requires core:stdlib — (load-plugin! \"core:stdlib\") before (load-plugin! \"" grep/plugin "\")")))
 

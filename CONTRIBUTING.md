@@ -93,7 +93,8 @@ constant once, up front, and aborts with one clear message — a too-old binary 
 fails downstream in unrelated-looking ways (e.g. an older `hume` rejecting `--config` dies
 as an opaque tmux "no server running" error in every case, not a version complaint). Nightly
 builds report a version like `0.12.0-<sha>`; the guard strips the commit suffix, so a
-nightly of the required version still passes.
+nightly of the required version still passes. `plugin.scm` checks the same version when the
+plugin loads, so keep the three in step: this constant, the check, and the README.
 
 In CI, `ci.yml`'s download step derives the release to fetch from the same constant: it
 checks whether `cvlmtg/hume` has a tag matching `v$MIN_HUME_VERSION` and downloads that
