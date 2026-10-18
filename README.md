@@ -15,6 +15,8 @@ falling back to `grep`. Any other program can be configured (see below).
 
 ## Install
 
+Add this to your `init.scm`:
+
 ```scheme
 (load-plugin! "core:stdlib")
 (load-plugin! "cvlmtg/grep.hume")
