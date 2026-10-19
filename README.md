@@ -35,6 +35,14 @@ re-evaluates `init.scm` now that it does. `:plum-update-plugins` pulls
 updates the same way, no reload needed until you actually want the new code
 active.
 
+To stay on a release instead of the latest commit, pin its tag with `#:ref`:
+
+```scheme
+(load-plugin! "cvlmtg/grep.hume" #:ref "v1.0.0")
+```
+
+Run `:plum-update-plugins` after changing or removing a `#:ref`.
+
 ## Usage
 
 | Key   | Command       | Effect |
@@ -101,7 +109,8 @@ one is still running).
 
 ## Contributing
 
-Bug reports and pull requests — see [CONTRIBUTING.md](CONTRIBUTING.md).
+Bug reports and pull requests — see [CONTRIBUTING.md](CONTRIBUTING.md). Release
+notes are in [CHANGELOG.md](CHANGELOG.md).
 
 This plugin doubles as a minimal reference for a HUME plugin that lives in its own
 repository and installs through PLUM — see [PLUGIN-AUTHORING.md](PLUGIN-AUTHORING.md).
