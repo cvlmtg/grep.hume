@@ -35,19 +35,26 @@ one-time `:steel-server-install`.
 
 ## Code standards
 
-- Every top-level `define` is prefixed `grep/` — everything in this file shares one namespace.
+- Editor command names are prefixed `grep/` (`grep/picker`), so they can't collide with
+  another plugin's commands. The typed command `:grep` has no prefix.
+- Top-level `define`s carry the same `grep/` prefix as house style. They are private to the
+  plugin, so the prefix only sets them apart from HUME builtins and Steel functions
+  (`grep/split-once` wraps Steel's `split-once`). `lint.sh` checks it.
 - Comments explain *why*, never *what*, and stay self-contained — no references to plan
   files or "as discussed". `;;;` documents the definition below it; `;;` marks a section
   banner or an inline aside.
 - If a change relies on a newer HUME API, bump `tests/lib.sh`'s `MIN_HUME_VERSION`,
   `plugin.scm`'s `hume-version>=?` check and its error message, and README's
   **Requirements** together — `lint.sh` checks they all match. CI picks stable vs. nightly
-  on its own; nothing in `ci.yml` needs editing.
+  on its own; nothing in `ci.yml` needs editing. See
+  [PLUGIN-AUTHORING.md](PLUGIN-AUTHORING.md#version-gating) for how the pieces fit.
+- A user-visible change adds a line under `## Unreleased` at the top of
+  [CHANGELOG.md](CHANGELOG.md), creating that heading if it isn't there.
 
-The general plugin-authoring rules this repo follows — public API only, reaching another
-plugin through `call!` by command name, reading `(plugin-config)` while the body evaluates,
-failing loudly on bad config — are documented once in
-[PLUGIN-AUTHORING.md](PLUGIN-AUTHORING.md); follow those rather than restating them here.
+The rules for writing a HUME plugin are in HUME's
+[Writing Plugins](https://cvlmtg.github.io/HUME/writing-plugins.html) manual.
+[PLUGIN-AUTHORING.md](PLUGIN-AUTHORING.md) covers what this repo adds on top: layout,
+version gating, tests, lint, CI and releases.
 
 ## Pull requests
 
@@ -65,7 +72,7 @@ docs(readme): document the debounce-ms config key
 ```
 
 Types in use: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `style`, `chore`. Scope is
-optional: `picker`, `config`, `parse`, `selection`, `keys`, or `docs`.
+optional: `picker`, `config`, `parse`, `selection`, `keys`, `docs`, `tests`, `lint`, or `ci`.
 
 The subject says what changed; the body says **why**. If the change isn't obvious from the
 diff, the body is not optional.
@@ -73,34 +80,19 @@ diff, the body is not optional.
 ## Verification
 
 ```sh
-./scripts/lint.sh  # README.md drift, naming convention, whitespace
-./tests/run.sh     # end-to-end, driving a real hume under tmux
+./scripts/lint.sh                # README.md drift, naming convention, whitespace
+./tests/run.sh                   # end-to-end, driving a real hume under tmux
+./tests/run.sh real-rg-smoke     # only the named cases from tests/cases/
 ```
 
 CI (`.github/workflows/ci.yml`) runs the same two scripts against the newest stable HUME
 release that ships `tests/lib.sh`'s `MIN_HUME_VERSION`, falling back to nightly if none does.
 
-`lint.sh` has no dependencies beyond bash/grep/awk. `tests/run.sh` needs `tmux`, plus a
-`hume` binary — the first one found, in order: `$HUME_BIN`, `$HUME_REPO` (built once via
-`cargo build -p hume-editor`), `hume` on `PATH`, or a sibling checkout at `../hume`. See
-[PLUGIN-AUTHORING.md](PLUGIN-AUTHORING.md)'s *Testing a plugin* for how it drives HUME.
-
-### Minimum HUME version
-
-`tests/lib.sh`'s `MIN_HUME_VERSION` is the one knob for what the suite demands. Whichever
-`hume` the resolution order above finds, `hume_resolve` checks its version against this
-constant once, up front, and aborts with one clear message — a too-old binary otherwise
-fails downstream in unrelated-looking ways (e.g. an older `hume` rejecting `--config` dies
-as an opaque tmux "no server running" error in every case, not a version complaint). Nightly
-builds report a version like `0.12.0-<sha>`; the guard strips the commit suffix, so a
-nightly of the required version still passes. `plugin.scm` checks the same version when the
-plugin loads, so keep the three in step: this constant, the check, and the README.
-`lint.sh` fails if they differ.
-
-In CI, `ci.yml`'s download step derives the release to fetch from the same constant: it
-checks whether `cvlmtg/hume` has a tag matching `v$MIN_HUME_VERSION` and downloads that
-stable release if so, or `nightly` if not. Once HUME tags the required version, CI picks it
-up automatically — no `ci.yml` edit needed.
+`lint.sh` has no dependencies beyond bash/grep/awk. `tests/run.sh` needs `tmux`, `rg` and
+`grep` on `PATH`, plus a `hume` binary — the first one found, in order: `$HUME_BIN`,
+`$HUME_REPO` (built once via `cargo build -p hume-editor`), `hume` on `PATH`, or a sibling
+checkout at `../hume`. See [PLUGIN-AUTHORING.md](PLUGIN-AUTHORING.md#testing) for how it
+drives HUME.
 
 The suite covers nearly everything HUME's own plugin API and this plugin's config
 validation can be asserted on: both typed and normal commands, selection seeding
@@ -118,6 +110,16 @@ What's left to check by hand, because it needs a platform this suite doesn't run
 
 - [ ] `#:config (hash "program" "RG.EXE")` (any casing) — still uses vimgrep shape and
       rg argv.
+
+## Releasing
+
+1. Rename CHANGELOG.md's `## Unreleased` heading to `## [X.Y.Z] - YYYY-MM-DD`. See
+   [PLUGIN-AUTHORING.md](PLUGIN-AUTHORING.md#releasing) for which part of the version to
+   bump.
+2. Check that HUME has tagged `v` + `MIN_HUME_VERSION`, so CI ran against that stable
+   release rather than nightly, and that CI on `main` is green.
+3. Tag and push the tag: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+4. Optionally, create a GitHub release from the tag with the changelog entry as its notes.
 
 ## Security
 
