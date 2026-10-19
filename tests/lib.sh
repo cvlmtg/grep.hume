@@ -132,7 +132,7 @@ _launch_hume() {
     # /bin/bash) treats a `set -u` expansion of an empty array as unbound.
     render_config "$template" "$config" ${subs[@]+"${subs[@]}"}
 
-    SESSION="grep-hume-test-$$-${RANDOM}"
+    SESSION="${PLUGIN_NAME//[\/.]/-}-test-$$-${RANDOM}" # "." and ":" separate window and pane in a tmux target
     PANE_PID="" # cleared so a failed new-session below can't leave stop_hume killing a stale pid from an earlier scenario in this script
     trap stop_hume EXIT
     tmux new-session -d -s "$SESSION" -x 100 -y 30 -c "$REPO_ROOT" \
@@ -178,9 +178,8 @@ _wait_settled() {
 
 # start_hume_expect_load_error <config-template> <input-file> [NAME=value ...]
 #
-# For a config expected to fail plugin load (a bad "program"/"debounce-ms"):
-# these configs never call configure-statusline!, so there's no filename to
-# wait for. Waits for the transient "plugin '...' failed to load: ..." flash
+# For a config value the plugin rejects at load. These configs never call
+# configure-statusline!, so there's no filename to wait for. Waits for the transient "plugin '...' failed to load: ..." flash
 # instead (truncated to the terminal width, but a stable readiness signal
 # that init.scm finished evaluating), then opens `:messages` — the flash
 # itself is too narrow to assert the plugin's own error text against, but
