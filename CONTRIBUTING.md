@@ -39,10 +39,10 @@ one-time `:steel-server-install`.
 - Comments explain *why*, never *what*, and stay self-contained — no references to plan
   files or "as discussed". `;;;` documents the definition below it; `;;` marks a section
   banner or an inline aside.
-- If a change relies on a newer HUME API, bump `tests/lib.sh`'s `MIN_HUME_VERSION` and
-  README's **Requirements** together — one is the enforcement, the other the claim, and
-  `lint.sh` checks they match. CI picks stable vs. nightly on its own; nothing in `ci.yml`
-  needs editing.
+- If a change relies on a newer HUME API, bump `tests/lib.sh`'s `MIN_HUME_VERSION`,
+  `plugin.scm`'s `hume-version>=?` check and its error message, and README's
+  **Requirements** together — `lint.sh` checks they all match. CI picks stable vs. nightly
+  on its own; nothing in `ci.yml` needs editing.
 
 The general plugin-authoring rules this repo follows — public API only, reaching another
 plugin through `call!` by command name, reading `(plugin-config)` while the body evaluates,
@@ -95,6 +95,7 @@ as an opaque tmux "no server running" error in every case, not a version complai
 builds report a version like `0.12.0-<sha>`; the guard strips the commit suffix, so a
 nightly of the required version still passes. `plugin.scm` checks the same version when the
 plugin loads, so keep the three in step: this constant, the check, and the README.
+`lint.sh` fails if they differ.
 
 In CI, `ci.yml`'s download step derives the release to fetch from the same constant: it
 checks whether `cvlmtg/hume` has a tag matching `v$MIN_HUME_VERSION` and downloads that

@@ -7,4 +7,4 @@ source ./lib.sh
 
 start_hume_expect_load_error config/old-hume.scm "$FIXTURES_DIR/tree/scratch.txt"
 wait_for "$PLUGIN_NAME"
-wait_for "requires HUME 0.16.0 or later"
+wait_for "requires HUME $MIN_HUME_VERSION or later"

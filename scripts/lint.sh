@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# invariants this repo documents but nothing enforces:
+# invariants this repo documents that only this script enforces:
 # - README's Config table matches the keys plugin.scm actually reads
-# - README's Requirements version matches tests/lib.sh's MIN_HUME_VERSION
+# - README's Requirements version, plugin.scm's load-time version check and
+#   its error message all match tests/lib.sh's MIN_HUME_VERSION
 # - every top-level define uses this plugin's naming prefix
 # - no tabs or trailing whitespace in a .scm file.
 set -euo pipefail
@@ -71,6 +72,18 @@ min_version="$(grep -oE '^MIN_HUME_VERSION="[^"]*"' tests/lib.sh | grep -oE '"[^
 readme_version="$(grep -oE '^- HUME [0-9]+\.[0-9]+\.[0-9]+ or later\.' README.md | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
 if [[ "$min_version" != "$readme_version" ]]; then
     note "README Requirements says HUME $readme_version, but tests/lib.sh's MIN_HUME_VERSION is $min_version"
+fi
+
+# --- plugin.scm's load-time version check vs MIN_HUME_VERSION ---------------
+check_version="$(grep -oE '\(hume-version>=\? [0-9]+ [0-9]+ [0-9]+\)' plugin.scm \
+    | grep -oE '[0-9]+ [0-9]+ [0-9]+' | tr ' ' '.')"
+if [[ "$min_version" != "$check_version" ]]; then
+    note "plugin.scm checks (hume-version>=? ${check_version//./ }), but tests/lib.sh's MIN_HUME_VERSION is $min_version"
+fi
+message_version="$(grep -oE 'requires HUME [0-9]+\.[0-9]+\.[0-9]+ or later' plugin.scm \
+    | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
+if [[ "$min_version" != "$message_version" ]]; then
+    note "plugin.scm's error says HUME $message_version, but tests/lib.sh's MIN_HUME_VERSION is $min_version"
 fi
 
 # --- every top-level define uses $PREFIX ------------------------------------
