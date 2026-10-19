@@ -108,8 +108,9 @@ validation can be asserted on: both typed and normal commands, selection seeding
 malformed row, load-time config errors, `Esc` actually killing the spawned search, `Ctrl+t`
 placing the match in a new tab rather than the current pane, and a truncated display row
 still parsing from its full untruncated payload. One case runs against the real `rg` for
-`--smart-case`; every other case fixes the search program's output via a fixture script, so
-the suite doesn't drift with `rg`'s own version.
+`--smart-case` and one row per matching line, and one against the real `grep` for skipping
+`.git`; every other case fixes the search program's output via a fixture script, so the
+suite doesn't drift with the search programs' own versions.
 
 What's left to check by hand, because it needs a platform this suite doesn't run on:
 

@@ -138,8 +138,6 @@
     (and (integer? line)
          (list (car path+rest) line 0 (cadr line+text)))))
 
-;;; The separator is the only difference between the two vimgrep shapes —
-;;; passed straight through rather than a wrapper per shape.
 (define (grep/parse-row row)
   (cond [(equal? grep/format 'vimgrep-null) (grep/parse-vimgrep-shaped-row row grep/nul)]
         [(equal? grep/format 'vimgrep) (grep/parse-vimgrep-shaped-row row ":")]
@@ -167,15 +165,9 @@
 
 ;; ── Open ──────────────────────────────────────────────────────────────────────
 
-;;; Opens the picker seeded with `seed` (possibly ""), live: every query
-;;; change re-runs `grep/program` instead of filtering already-fetched
-;;; rows. `live-picker!` also turns off HUME's local fuzzy filter — the
-;;; query already IS the search rg ran, and fuzzy-filtering matched rows
-;;; again would drop hits a regex like "foo.*bar" doesn't happen to
-;;; fuzzy-match. It stops the previous search before the debounce, not
-;;; inside it, so a still-running search never appends stale rows for a
-;;; pattern the query box no longer shows — the rows already on screen
-;;; stay put, marked as refreshing, until the new search delivers its own.
+;;; Opens the picker seeded with `seed` (possibly ""). Every query change
+;;; re-runs `grep/program` with the query as its pattern; an empty query
+;;; clears the rows instead of searching.
 (define (grep/open! pane seed)
   (live-picker! pane grep/goto!
                 #:prompt "grep: "

@@ -13,7 +13,8 @@ this repo's own layout demonstrates.
   disk. `"cvlmtg/grep.hume"` is also the GitHub path PLUM clones from and the install
   directory name under the data directory.
 - **No `manifest.scm`**: a plugin without one loads eagerly, which this plugin needs — its
-  only entry point besides its two typed commands is a key binding it sets itself (`g /`),
+  only entry point besides its `:grep` and `grep/picker` commands is a key binding it sets
+  itself (`g /`),
   and a plugin's own `bind-key!` call only runs once the plugin's body has been evaluated.
   A `manifest.scm` would make `load-plugin!` lazy and leave `g /` unbound until a command
   triggered activation.
