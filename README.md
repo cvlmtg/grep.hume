@@ -64,14 +64,15 @@ one is still running).
 |----------------|---------------------------------------------|--------|
 | `"program"`    | `"rg"` if on `PATH`, else `"grep"`          | The search binary. Checked at load — an unresolvable program errors immediately, naming the plugin and the key. |
 | `"format"`     | `'vimgrep-null` if `"program"` is `"rg"`, else `'grep` | Output shape to parse: `'vimgrep-null`, `'vimgrep`, or `'grep` — see [Output shapes](#output-shapes). Set this if you configure a third program, or if you override `"args"` to drop `--null` (pair that with `"format" 'vimgrep`). |
-| `"args"`       | rg: `'("--vimgrep" "--no-heading" "--color" "never" "--null" "--smart-case" "-m" "1000" "-M" "512" "--max-columns-preview" "--")`<br>grep: `'("-rnI" "-i" "--color=never" "--")` | Argv placed before the pattern. The pattern and the search root (`.`) are always appended after. `-m`/`-M` bound per-file and per-row cost — see Known limitations. |
+| `"args"`       | rg: `'("--column" "--with-filename" "--no-heading" "--color" "never" "--null" "--smart-case" "-m" "1000" "-M" "512" "--max-columns-preview" "--")`<br>grep: `'("-rnI" "-i" "--color=never" "--")` | Argv placed before the pattern. The pattern and the search root (`.`) are always appended after. `-m`/`-M` bound per-file and per-row cost — see Known limitations. |
 | `"debounce-ms"`| `120`                                        | Milliseconds to wait after the last keystroke before re-running the search. Must be a non-negative integer. |
 
 ### Output shapes
 
-- `'vimgrep-null` — `path\0line:col:text` (rg's `--vimgrep --null`,
+- `'vimgrep-null` — `path\0line:col:text` (rg's `--column --null`,
   NUL-terminated path).
-- `'vimgrep` — `path:line:col:text` (same without `--null`).
+- `'vimgrep` — `path:line:col:text` (same without `--null`; also what rg's
+  `--vimgrep` prints).
 - `'grep` — `path:line:text` (no column).
 
 ## Known limitations
@@ -82,10 +83,11 @@ one is still running).
   be configured at all. The `'vimgrep` shape (no `--null`) also breaks on a
   literal `:` in the path, the same limitation vim's own `errorformat` has
   for this shape; `'vimgrep-null` doesn't have that problem.
-- `-m` in the default `"args"` caps matching *lines* per file searched, not
-  picker rows or the search as a whole — `--vimgrep` still emits one row per
-  match on a capped line before the cap takes effect, and a broadly
-  matching pattern across a large tree can still produce many rows. `-M`
+- rg shows one row per matching line: a line with several matches appears
+  once, and `Enter` lands on its first match.
+- `-m` in the default `"args"` caps rows per file searched, not the search
+  as a whole — a broadly matching pattern across a large tree can still
+  produce many rows. `-M`
   bounds each row's own width instead, showing a truncated preview
   (`--max-columns-preview`) rather than an unusable placeholder — `Enter`
   lands on the real column for a match within the limit, or the preview's

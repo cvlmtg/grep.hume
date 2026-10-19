@@ -48,15 +48,16 @@
 
 ;;; Argv before the pattern; the pattern and search root (".") are appended
 ;;; after (see `grep/open!`). `--` stops a pattern starting with "-" from
-;;; being read as a flag. See README's Known limitations for what `-m`/`-M`
-;;; actually bound.
+;;; being read as a flag. rg's `--column` gives one row per matching line,
+;;; at its first match, where `--vimgrep` repeats the line once per match.
+;;; See README's Known limitations for what `-m`/`-M` actually bound.
 (define grep/default-args
   (cond [(equal? grep/format 'vimgrep-null)
-         '("--vimgrep" "--no-heading" "--color" "never" "--null" "--smart-case" "-m" "1000" "-M" "512"
-           "--max-columns-preview" "--")]
+         '("--column" "--with-filename" "--no-heading" "--color" "never" "--null" "--smart-case"
+           "-m" "1000" "-M" "512" "--max-columns-preview" "--")]
         [(equal? grep/format 'vimgrep)
-         '("--vimgrep" "--no-heading" "--color" "never" "--smart-case" "-m" "1000" "-M" "512"
-           "--max-columns-preview" "--")]
+         '("--column" "--with-filename" "--no-heading" "--color" "never" "--smart-case"
+           "-m" "1000" "-M" "512" "--max-columns-preview" "--")]
         [else '("-rnI" "-i" "--color=never" "--")]))
 (define grep/args
   (call! "stdlib/config-list" grep/plugin grep/cfg "args" grep/default-args))
