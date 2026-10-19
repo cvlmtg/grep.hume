@@ -64,7 +64,7 @@ one is still running).
 |----------------|---------------------------------------------|--------|
 | `"program"`    | `"rg"` if on `PATH`, else `"grep"`          | The search binary. Checked at load — an unresolvable program errors immediately, naming the plugin and the key. |
 | `"format"`     | `'vimgrep-null` if `"program"` is `"rg"`, else `'grep` | Output shape to parse: `'vimgrep-null`, `'vimgrep`, or `'grep` — see [Output shapes](#output-shapes). Set this if you configure a third program, or if you override `"args"` to drop `--null` (pair that with `"format" 'vimgrep`). |
-| `"args"`       | rg: `'("--column" "--with-filename" "--no-heading" "--color" "never" "--null" "--smart-case" "-m" "1000" "-M" "512" "--max-columns-preview" "--")`<br>grep: `'("-rnI" "-i" "--color=never" "--")` | Argv placed before the pattern. The pattern and the search root (`.`) are always appended after. `-m`/`-M` bound per-file and per-row cost — see Known limitations. |
+| `"args"`       | rg: `'("--column" "--with-filename" "--no-heading" "--color" "never" "--null" "--smart-case" "-m" "1000" "-M" "512" "--max-columns-preview" "--")`<br>grep: `'("-rnI" "-i" "--exclude-dir=.git" "--color=never" "--")` | Argv placed before the pattern. The pattern and the search root (`.`) are always appended after. `-m`/`-M` bound per-file and per-row cost — see Known limitations. |
 | `"debounce-ms"`| `120`                                        | Milliseconds to wait after the last keystroke before re-running the search. Must be a non-negative integer. |
 
 ### Output shapes

@@ -58,7 +58,7 @@
         [(equal? grep/format 'vimgrep)
          '("--column" "--with-filename" "--no-heading" "--color" "never" "--smart-case"
            "-m" "1000" "-M" "512" "--max-columns-preview" "--")]
-        [else '("-rnI" "-i" "--color=never" "--")]))
+        [else '("-rnI" "-i" "--exclude-dir=.git" "--color=never" "--")]))
 (define grep/args
   (call! "stdlib/config-list" grep/plugin grep/cfg "args" grep/default-args))
 
