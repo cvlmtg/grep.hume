@@ -116,7 +116,7 @@ What's left to check by hand, because it needs a platform this suite doesn't run
 1. Rename CHANGELOG.md's `## Unreleased` heading to `## [X.Y.Z] - YYYY-MM-DD`. See
    [PLUGIN-AUTHORING.md](PLUGIN-AUTHORING.md#releasing) for which part of the version to
    bump.
-2. Check that HUME has tagged `v` + `MIN_HUME_VERSION`, so CI ran against that stable
+2. Check that HUME has tagged `v` + `MIN_HUME_VERSION`, so CI ran against a stable
    release rather than nightly, and that CI on `main` is green.
 3. Tag and push the tag: `git tag vX.Y.Z && git push origin vX.Y.Z`.
 4. Optionally, create a GitHub release from the tag with the changelog entry as its notes.
