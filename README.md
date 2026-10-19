@@ -1,5 +1,7 @@
 # grep.hume
 
+[![ci](https://github.com/cvlmtg/grep.hume/actions/workflows/ci.yml/badge.svg)](https://github.com/cvlmtg/grep.hume/actions/workflows/ci.yml)
+
 Live grep for [HUME](https://github.com/cvlmtg/hume), in the fuzzy picker.
 Open the picker, type a pattern, and matches appear as you type.
 
