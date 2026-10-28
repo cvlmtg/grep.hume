@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [2.0.0] - 2026-10-28
+
 Requires HUME 0.17.0 or later.
 
 - Breaking: `#:config` keys are symbols, as HUME 0.17.0 requires: write
