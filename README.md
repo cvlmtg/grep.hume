@@ -10,7 +10,7 @@ falling back to `grep`. Any other program can be configured (see below).
 
 ## Requirements
 
-- HUME 0.16.0 or later.
+- HUME 0.17.0 or later.
 - `rg` or `grep` on `PATH` (or another program you configure) — checked at
   load; a missing or misconfigured binary errors immediately instead of
   producing a silently empty picker.
@@ -40,7 +40,7 @@ active.
 To stay on a release instead of the latest commit, pin its tag with `#:ref`:
 
 ```scheme
-(load-plugin! "cvlmtg/grep.hume" #:ref "v1.0.0")
+(load-plugin! "cvlmtg/grep.hume" #:ref "v2.0.0")
 ```
 
 Run `:plum-update-plugins` after changing or removing a `#:ref`.
@@ -67,15 +67,15 @@ one is still running).
 ## Config
 
 ```scheme
-(load-plugin! "cvlmtg/grep.hume" #:config (hash "program" "grep"))
+(load-plugin! "cvlmtg/grep.hume" #:config (hash 'program "grep"))
 ```
 
 | Key            | Default                                    | Effect |
 |----------------|---------------------------------------------|--------|
-| `"program"`    | `"rg"` if on `PATH`, else `"grep"`          | The search binary. Checked at load — an unresolvable program errors immediately, naming the plugin and the key. |
-| `"format"`     | `'vimgrep-null` if `"program"` is `"rg"`, else `'grep` | Output shape to parse: `'vimgrep-null`, `'vimgrep`, or `'grep` — see [Output shapes](#output-shapes). Set this if you configure a third program, or if you override `"args"` to drop `--null` (pair that with `"format" 'vimgrep`). |
-| `"args"`       | rg: `'("--column" "--with-filename" "--no-heading" "--color" "never" "--null" "--smart-case" "-m" "1000" "-M" "512" "--max-columns-preview" "--")`<br>grep: `'("-rnI" "-i" "--exclude-dir=.git" "--color=never" "--")` | Argv placed before the pattern. The pattern and the search root (`.`) are always appended after. `-m`/`-M` bound per-file and per-row cost — see Known limitations. |
-| `"debounce-ms"`| `120`                                        | Milliseconds to wait after the last keystroke before re-running the search. Must be a non-negative integer. |
+| `'program`     | `"rg"` if on `PATH`, else `"grep"`          | The search binary. Checked at load — an unresolvable program errors immediately, naming the plugin and the key. |
+| `'format`      | `'vimgrep-null` if `'program` is `"rg"`, else `'grep` | Output shape to parse: `'vimgrep-null`, `'vimgrep`, or `'grep` — see [Output shapes](#output-shapes). Set this if you configure a third program, or if you override `'args` to drop `--null` (pair that with `'format 'vimgrep`). |
+| `'args`        | rg: `'("--column" "--with-filename" "--no-heading" "--color" "never" "--null" "--smart-case" "-m" "1000" "-M" "512" "--max-columns-preview" "--")`<br>grep: `'("-rnI" "-i" "--exclude-dir=.git" "--color=never" "--")` | Argv placed before the pattern. The pattern and the search root (`.`) are always appended after. `-m`/`-M` bound per-file and per-row cost — see Known limitations. |
+| `'debounce-ms` | `120`                                        | Milliseconds to wait after the last keystroke before re-running the search. Must be a non-negative integer. |
 
 ### Output shapes
 
@@ -87,26 +87,26 @@ one is still running).
 
 ## Known limitations
 
-- `"format"` is a closed set of three shapes (see [Output
-  shapes](#output-shapes)) — a third program needs `"args"` set to match
+- `'format` is a closed set of three shapes (see [Output
+  shapes](#output-shapes)) — a third program needs `'args` set to match
   one of them, and a program whose output matches none of the three can't
   be configured at all. The `'vimgrep` shape (no `--null`) also breaks on a
   literal `:` in the path, the same limitation vim's own `errorformat` has
   for this shape; `'vimgrep-null` doesn't have that problem.
 - rg shows one row per matching line: a line with several matches appears
   once, and `Enter` lands on its first match.
-- `-m` in the default `"args"` caps rows per file searched, not the search
+- `-m` in the default `'args` caps rows per file searched, not the search
   as a whole — a broadly matching pattern across a large tree can still
   produce many rows. `-M`
   bounds each row's own width instead, showing a truncated preview
   (`--max-columns-preview`) rather than an unusable placeholder — `Enter`
   lands on the real column for a match within the limit, or the preview's
   end for one beyond it.
-- Case: rg's default `"args"` carry `--smart-case` — an all-lowercase pattern
+- Case: rg's default `'args` carry `--smart-case` — an all-lowercase pattern
   matches either case, and typing any uppercase character narrows the search
-  to that case. `grep` has no such mode, so its default `"args"` carry the
+  to that case. `grep` has no such mode, so its default `'args` carry the
   blunter `-i` instead — always case-insensitive, with no way to narrow by
-  case. Both are ordinary flags in `"args"`, so overriding that key changes
+  case. Both are ordinary flags in `'args`, so overriding that key changes
   or drops this behavior like any other.
 
 ## Contributing

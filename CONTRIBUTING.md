@@ -1,7 +1,7 @@
 # Contributing to grep.hume
 
 - **Bug reports are always welcome.** Include your HUME version (`hume --version`), your
-  `"program"`/`"format"`/`"args"` config if you set any, the exact pattern you searched, and
+  `'program`/`'format`/`'args` config if you set any, the exact pattern you searched, and
   — if a result row failed to parse — the row itself from `:messages`.
 - **Small, focused fixes** can go straight to a pull request.
 
@@ -108,7 +108,7 @@ What's left to check by hand, because it needs a platform this suite doesn't run
 
 ### Windows
 
-- [ ] `#:config (hash "program" "RG.EXE")` (any casing) — still uses vimgrep shape and
+- [ ] `#:config (hash 'program "RG.EXE")` (any casing) — still uses vimgrep shape and
       rg argv.
 
 ## Releasing

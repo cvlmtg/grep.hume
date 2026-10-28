@@ -52,7 +52,7 @@ The file reads top to bottom in the order HUME evaluates it:
 1. **Load-time guards**: the minimum HUME version and the `core:stdlib` dependency, each
    failing with an error that names the plugin.
 2. **Config**: every `#:config` key read once, into defines, through `core:stdlib`'s
-   `stdlib/config-*` helpers, and a bad `"program"` rejected at load instead of inside a
+   `stdlib/config-*` helpers, and a bad `'program` rejected at load instead of inside a
    search.
 3. **Selection seeding**: turning the primary selection into the initial query.
 4. **Result-row parsing**: runs only on the row the user picks, never per row, so the
@@ -84,8 +84,8 @@ top of `plugin.scm` are worked examples of [Depending on another
 plugin](https://cvlmtg.github.io/HUME/writing-plugins.html#depending-on-another-plugin) and
 [Configuring a
 plugin](https://cvlmtg.github.io/HUME/writing-plugins.html#configuring-a-plugin).
-`(plugin-config)` returns the user's `#:config` only while the plugin's body is being
-evaluated, so read every key there, never from inside a command.
+Every key is read in the plugin's body, so a bad value fails when the plugin loads instead of
+the first time a command needs it.
 
 ### Version gating
 
@@ -96,7 +96,7 @@ One minimum HUME version appears in four places, and `lint.sh` fails if they dif
 - `tests/lib.sh`'s `MIN_HUME_VERSION`, which `hume_resolve` checks against the `hume` the
   tests drive before running any case. A too-old binary would otherwise fail every case in
   unrelated-looking ways, such as an opaque tmux "no server running". A nightly reports a
-  version like `0.16.0-<sha>`; the check strips the suffix, so a nightly of the required
+  version like `0.17.0-<sha>`; the check strips the suffix, so a nightly of the required
   version passes;
 - the README's Requirements line.
 
@@ -129,7 +129,7 @@ shapes, so keep them when adapting the files:
 
 | Check | Shape it reads |
 |---|---|
-| README's Config table lists the keys `plugin.scm` reads, no more and no fewer | table rows whose first cell is a lowercase, hyphenated key in quotes and backticks (`` `"debounce-ms"` ``), and calls of the form `(call! "stdlib/config-…" <prefix>plugin <prefix>cfg "key" …)` |
+| README's Config table lists the keys `plugin.scm` reads, no more and no fewer | table rows whose first cell is a lowercase, hyphenated quoted symbol in backticks (`` `'debounce-ms` ``), and calls of the form `(call! "stdlib/config-…" <prefix>plugin <prefix>cfg 'key …)` |
 | The minimum HUME version matches everywhere | `- HUME X.Y.Z or later.` in the README, `(hume-version>=? X Y Z)` and `requires HUME X.Y.Z or later` in `plugin.scm`, `MIN_HUME_VERSION="X.Y.Z"` in `tests/lib.sh` |
 | Every top-level define is prefixed | `(define <prefix>name …)` and `(define (<prefix>name …) …)` |
 | No tabs or trailing whitespace in `.scm` files | every `.scm` file in the repo |

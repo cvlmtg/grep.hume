@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# `#:config (hash "program" "grep")` parses path:line:text (no column) rows
+# `#:config (hash 'program "grep")` parses path:line:text (no column) rows
 # and lands at line start.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."

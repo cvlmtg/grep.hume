@@ -56,11 +56,11 @@ diff_sets() {
 }
 
 # --- README's Config table vs the keys plugin.scm actually reads ----------
-readme_keys="$(grep -oE '^\| `"[a-z-]+"`' README.md | grep -oE '"[a-z-]+"' | tr -d '"')"
+readme_keys="$(grep -oE "^\| \`'[a-z-]+\`" README.md | grep -oE "'[a-z-]+" | tr -d "'")"
 plugin_keys="$(grep -v '^[[:space:]]*;' plugin.scm \
-    | grep -oE "stdlib/config-[a-z]+\" ${PREFIX}plugin ${PREFIX}cfg \"[a-z-]+\"" \
-    | grep -oE '"[a-z-]+"$' \
-    | tr -d '"')"
+    | grep -oE "stdlib/config-[a-z]+\" ${PREFIX}plugin ${PREFIX}cfg '[a-z-]+" \
+    | grep -oE "'[a-z-]+$" \
+    | tr -d "'")"
 
 diff_sets "README Config table" \
     "is documented but plugin.scm never reads it via stdlib/config-*" \

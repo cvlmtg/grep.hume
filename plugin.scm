@@ -2,31 +2,31 @@
 
 (define grep/plugin "cvlmtg/grep.hume")
 
-(unless (hume-version>=? 0 16 0)
-  (error (string-append grep/plugin ": requires HUME 0.16.0 or later")))
+(unless (hume-version>=? 0 17 0)
+  (error (string-append grep/plugin ": requires HUME 0.17.0 or later")))
 
 (unless (member "core:stdlib" (declared-plugins))
   (error (string-append grep/plugin ": requires core:stdlib — (load-plugin! \"core:stdlib\") before (load-plugin! \"" grep/plugin "\")")))
 
 ;; ── Config ────────────────────────────────────────────────────────────────────
-;; `(plugin-config)` only returns the real hash while this body is being
-;; evaluated — read it now into defines, never from inside a command. See
-;; README's Config table for what each key controls.
+;; Every key is read here, at load, so a bad value errors when the plugin
+;; loads instead of from inside a search. See README's Config table for what
+;; each key controls.
 
 (define grep/cfg (plugin-config))
 
-(define grep/default-program (or (which "rg") "grep"))
+(define grep/default-program (or (find-program "rg") "grep"))
 (define grep/program
-  (call! "stdlib/config-string" grep/plugin grep/cfg "program" grep/default-program))
+  (call! "stdlib/config-string" grep/plugin grep/cfg 'program grep/default-program))
 
-;;; Checked at load so a bad "program" errors immediately, not as a silent
+;;; Checked at load so a bad 'program errors immediately, not as a silent
 ;;; empty picker from inside a debounce timer later.
-(unless (which grep/program)
-  (error (string-append grep/plugin ": \"program\" (" grep/program
-                         ") is not on PATH — install it, or set \"program\" to one that is")))
+(unless (find-program grep/program)
+  (error (string-append grep/plugin ": 'program (" grep/program
+                         ") is not on PATH — install it, or set 'program to one that is")))
 
 ;;; Basename with a ".exe" suffix stripped, case-folded only for that check
-;;; — Steel's `which` resolves an unqualified "rg" through Windows' PATHEXT,
+;;; — `find-program` resolves an unqualified "rg" through Windows' PATHEXT,
 ;;; whose default casing is ".EXE", so a case-sensitive strip would miss the
 ;;; plugin's own zero-config default there. A bare (non-".exe") basename
 ;;; still compares case-sensitively — a program's exact name matters on the
@@ -39,11 +39,11 @@
 
 ;;; Output shape to parse — see README's Config table and Known limitations
 ;;; for what each of the three means. Defaults to whichever shape matches
-;;; `program`; only a third program, or an `"args"` override dropping
-;;; `--null`, needs `"format"` set explicitly.
+;;; `program`; only a third program, or an 'args override dropping
+;;; `--null`, needs 'format set explicitly.
 (define grep/default-format (if (equal? grep/program-name "rg") 'vimgrep-null 'grep))
 (define grep/format
-  (call! "stdlib/config-enum" grep/plugin grep/cfg "format" grep/default-format
+  (call! "stdlib/config-enum" grep/plugin grep/cfg 'format grep/default-format
          '(vimgrep-null vimgrep grep)))
 
 ;;; Argv before the pattern; the pattern and search root (".") are appended
@@ -60,13 +60,13 @@
            "-m" "1000" "-M" "512" "--max-columns-preview" "--")]
         [else '("-rnI" "-i" "--exclude-dir=.git" "--color=never" "--")]))
 (define grep/args
-  (call! "stdlib/config-list" grep/plugin grep/cfg "args" grep/default-args))
+  (call! "stdlib/config-list" grep/plugin grep/cfg 'args grep/default-args))
 
 ;;; Keystrokes are human-rate; searching on every one would spawn and kill
 ;;; a process mid-word for nothing. `live-picker!` re-validates this same
 ;;; shape at spawn time — checked here too for an earlier, key-named error.
 (define grep/debounce-ms
-  (call! "stdlib/config-integer" grep/plugin grep/cfg "debounce-ms" 120 0))
+  (call! "stdlib/config-integer" grep/plugin grep/cfg 'debounce-ms 120 0))
 
 ;; ── Selection seeding ─────────────────────────────────────────────────────────
 
@@ -76,11 +76,10 @@
 (define (grep/primary-selection-text pane)
   (let* ([primary (call! "stdlib/primary-selection" (buffer-selections pane))]
          [collapsed? (or (not primary)
-                         (= (call! "stdlib/selection-anchor" primary)
-                            (call! "stdlib/selection-head" primary)))])
+                         (= (selection-anchor primary) (selection-head primary)))])
     (and (not collapsed?)
-         (let* ([start (call! "stdlib/selection-start-char" primary)]
-                [end (call! "stdlib/selection-end-char" primary)]
+         (let* ([start (selection-start-char primary)]
+                [end (selection-end-char primary)]
                 [line (char-offset->line pane start)])
            (and (= line (char-offset->line pane (- end 1)))
                 (let* ([line-offset (line->char-offset pane line)]
@@ -160,7 +159,7 @@
                                     (hash 'target path
                                           'line (- line 1)
                                           'char-col (grep/byte-col->char-col text byte-col)))
-              (log! 'warn (string-append "grep: " path " has no line " (number->string line)))))
+              (log! 'warning (string-append "grep: " path " has no line " (number->string line)))))
           (log! 'error (string-append "grep: could not parse result row: " row))))))
 
 ;; ── Open ──────────────────────────────────────────────────────────────────────

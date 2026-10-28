@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # A path containing a literal ':' parses and Enter lands in it — the
-# NUL-terminated 'vimgrep-null shape (default when "program" is rg-shaped)
+# NUL-terminated 'vimgrep-null shape (default when 'program is rg-shaped)
 # doesn't share 'vimgrep's colon-in-path limitation.
 #
 # ':' is illegal in Windows/NTFS filenames, so the fixture is created here

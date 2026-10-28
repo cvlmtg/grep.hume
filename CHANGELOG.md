@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+Requires HUME 0.17.0 or later.
+
+- Breaking: `#:config` keys are symbols, as HUME 0.17.0 requires: write
+  `(hash 'program "grep")` for `(hash "program" "grep")`, and the same for `'format`,
+  `'args` and `'debounce-ms`.
+
 ## [1.0.0] - 2026-10-20
 
 First stable release. Requires HUME 0.16.0 or later.

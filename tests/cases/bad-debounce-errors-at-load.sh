@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# `#:config (hash "debounce-ms" "fast")` errors at load, naming the plugin
+# `#:config (hash 'debounce-ms "fast")` errors at load, naming the plugin
 # and the key.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."

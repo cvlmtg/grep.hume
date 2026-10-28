@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The real `grep`'s default "args" don't descend into .git. The query names
+# The real `grep`'s default 'args don't descend into .git. The query names
 # a key only .git/config holds; its bracket keeps this script from matching.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."

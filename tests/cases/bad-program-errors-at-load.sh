@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# `#:config (hash "program" "nonexistent")` errors at load, naming the
+# `#:config (hash 'program "nonexistent")` errors at load, naming the
 # plugin and the key — not later from a debounce timer.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
