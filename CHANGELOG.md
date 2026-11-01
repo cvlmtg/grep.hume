@@ -6,6 +6,8 @@ Requires HUME 0.18.0 or later.
 
 - Breaking: the plugin needs HUME 0.18.0, whose pickers take a keymap. The picker keeps
   its keys.
+- Rows color the directory, line and column numbers and the match, leave out the line's
+  indentation, and shorten a long directory from its front so the match stays in view.
 
 ## [2.0.0] - 2026-10-28
 

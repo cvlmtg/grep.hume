@@ -161,6 +161,85 @@
               (log! 'warning (string-append "grep: " path " has no line " (number->string line)))))
           (log! 'error (string-append "grep: could not parse result row: " row))))))
 
+;; ── Row rendering ─────────────────────────────────────────────────────────────
+
+(define (grep/span start end scope)
+  (hash 'start-char start 'end-char end 'scope scope))
+
+;;; A span that takes the picker's selected style on the selected row, where
+;;; a theme's own color for `scope` can match that style's background.
+(define (grep/part-span start end scope)
+  (hash-insert (grep/span start end scope) 'selected-scope "ui.text.focus"))
+
+;;; Char index in `text` where `query` occurs, compared without case, or #f.
+;;; `char-col` is where the search program reported its match, kept only when
+;;; the text there is the query, so a regex query gets #f unless it matched
+;;; its own text. With no column (grep format) the first exact occurrence
+;;; wins over a case-folded one, so a case-sensitive 'args highlights what it
+;;; matched.
+(define (grep/match-start text char-col query)
+  (let* ([len (string-length query)]
+         [index-in (lambda (haystack needle)
+                     (let ([parts (grep/split-once haystack needle)])
+                       (and parts (string-length (car parts)))))]
+         [start (and (> len 0)
+                     (or char-col
+                         (index-in text query)
+                         (index-in (string-downcase text) (string-downcase query))))])
+    (and start
+         (<= (+ start len) (string-length text))
+         (string-ci=? (substring text start (+ start len)) query)
+         start)))
+
+;;; A parsed row as shown: its directory, line, column and match styled, and
+;;; its text without indentation. A row wider than `budget` loses the front
+;;; of its directory first, until the file name, the location and up to half
+;;; the budget of text fit; `#:truncate 'tail` cuts whatever is still over.
+(define (grep/row-display parsed budget query)
+  (let* ([path (car parsed)]
+         [line (number->string (cadr parsed))]
+         [byte-col (caddr parsed)]
+         [text (cadddr parsed)]
+         [col (and (not (equal? grep/format 'grep)) (number->string byte-col))]
+         [match (grep/match-start text (and col (grep/byte-col->char-col text byte-col)) query)]
+         ;; Indentation stops at the match, so a query starting with spaces
+         ;; still shows what it matched.
+         [indent (- (string-length text) (string-length (trim-start text)))]
+         [cut (if match (min indent match) indent)]
+         [shown (substring text cut (string-length text))]
+         [name (file-name path)]
+         [base (if (and (not (equal? name "")) (ends-with? path name)) name path)]
+         [location (string-append ":" line (if col (string-append ":" col) "") ":")]
+         [dir-cells (max 0 (- budget
+                              (string-width (string-append base location))
+                              (min (string-width shown) (quotient budget 2))))]
+         [dir (string-fit (substring path 0 (- (string-length path) (string-length base)))
+                          dir-cells 'head)]
+         [line-start (+ (string-length dir) (string-length base) 1)]
+         [line-end (+ line-start (string-length line))]
+         [text-start (+ (string-length dir) (string-length base) (string-length location))])
+    (hash 'text (string-append dir base location shown)
+          'spans (append
+                  (if (equal? dir "") '() (list (grep/part-span 0 (string-length dir) "comment")))
+                  (list (grep/part-span line-start line-end "constant.numeric"))
+                  (if col
+                      (list (grep/part-span (+ line-end 1) (+ line-end 1 (string-length col))
+                                            "constant.numeric"))
+                      '())
+                  (if match
+                      (list (grep/span (+ text-start (- match cut))
+                                       (+ text-start (- match cut) (string-length query))
+                                       "ui.cursor.match.search"))
+                      '())))))
+
+;;; `#:render` for a picker searching `query`: a row that doesn't parse shows
+;;; as the source gave it, and `grep/goto!` logs it if picked.
+(define (grep/render-rows rows budget query)
+  (map (lambda (row)
+         (let ([parsed (grep/parse-row (cdr row))])
+           (if parsed (grep/row-display parsed budget query) (car row))))
+       rows))
+
 ;; ── Open ──────────────────────────────────────────────────────────────────────
 
 ;;; Opens the picker seeded with `seed` (possibly ""). Every query change
@@ -169,21 +248,26 @@
 ;;; focus a new tab or split before calling `grep/goto!`, which targets
 ;;; `(focused-pane)`.
 (define (grep/open! pane seed)
-  (live-picker! pane (call! "stdlib/picker-keymap" grep/goto!)
-                #:prompt "grep: "
-                #:query seed
-                ;; rg exits 1 for "no matches" — a normal outcome while
-                ;; typing, not a failure worth a message-log entry.
-                #:source (picker-command-source
-                          (lambda (query)
-                            (and (not (equal? query ""))
-                                 (cons grep/program (append grep/args (list query ".")))))
-                          #:ok-exit-codes '(0 1))
-                #:debounce-ms grep/debounce-ms
-                ;; A result row is "path:line:col:text" — the path is what
-                ;; the user is scanning for, not the match text trailing it,
-                ;; so an overlong row should drop from the end, not the front.
-                #:truncate 'tail))
+  ;; The query the shown rows answer: the source sets it as it starts a
+  ;; search, and every row arriving after that is that search's.
+  (let ([searched seed])
+    (live-picker! pane (call! "stdlib/picker-keymap" grep/goto!)
+                  #:prompt "grep: "
+                  #:query seed
+                  ;; rg exits 1 for "no matches" — a normal outcome while
+                  ;; typing, not a failure worth a message-log entry.
+                  #:source (picker-command-source
+                            (lambda (query)
+                              (set! searched query)
+                              (and (not (equal? query ""))
+                                   (cons grep/program (append grep/args (list query ".")))))
+                            #:ok-exit-codes '(0 1))
+                  #:debounce-ms grep/debounce-ms
+                  #:render (lambda (rows budget) (grep/render-rows rows budget searched))
+                  ;; A result row is "path:line:col:text" — the path is what
+                  ;; the user is scanning for, not the match text trailing it,
+                  ;; so an overlong row should drop from the end, not the front.
+                  #:truncate 'tail)))
 
 ;; ── Commands ──────────────────────────────────────────────────────────────────
 

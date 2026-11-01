@@ -64,6 +64,13 @@ line, and column in the current pane, `Ctrl+t`/`Ctrl+v`/`Ctrl+s` jump there
 in a new tab, a side-by-side split, or a stacked split instead, `Esc`
 dismisses (killing the search if one is still running).
 
+Each row shows the file's directory dimmed, its line and column numbers in
+color, and the match highlighted, without the line's indentation. A row too
+wide for the picker shortens the directory from its front, so the file name,
+the location and the match stay in view. Themes set these colors with the
+`comment`, `constant.numeric` and `ui.cursor.match.search` scopes; on the
+selected row the directory and numbers take the selected row's color.
+
 ## Config
 
 ```scheme
@@ -95,6 +102,9 @@ dismisses (killing the search if one is still running).
   for this shape; `'vimgrep-null` doesn't have that problem.
 - rg shows one row per matching line: a line with several matches appears
   once, and `Enter` lands on its first match.
+- A match is highlighted only when its text is the pattern's, ignoring
+  case: a regular expression such as `fo+` finds its rows but highlights
+  nothing in them.
 - `-m` in the default `'args` caps rows per file searched, not the search
   as a whole — a broadly matching pattern across a large tree can still
   produce many rows. `-M`

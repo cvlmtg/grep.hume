@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# One vimgrep-null row whose directory alone is wider than the picker.
+dir="tests/fixtures/tree"
+for _ in 1 2 3 4 5 6; do dir+="/a-rather-long-directory-name"; done
+printf '%s/deep.txt\x00%d:%d:%s\n' "$dir" 7 1 "needle here"

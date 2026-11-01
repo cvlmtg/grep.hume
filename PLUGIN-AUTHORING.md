@@ -55,13 +55,17 @@ The file reads top to bottom in the order HUME evaluates it:
    `stdlib/config-*` helpers, and a bad `'program` rejected at load instead of inside a
    search.
 3. **Selection seeding**: turning the primary selection into the initial query.
-4. **Result-row parsing**: runs only on the row the user picks, never per row, so the
-   picker stays fast however many rows a search streams in.
-5. **Open**: the `live-picker!` call, with its subprocess source and `core:stdlib`'s picker
-   keymap, whose keys also open a match in a new tab or a split.
-6. **Commands**: one typed command and one key-bindable command, both calling the same
+4. **Result-row parsing**: runs on the row the user picks and on each row as it comes into
+   view, never on every row a search streams in, so the picker stays fast however many rows
+   arrive.
+5. **Row rendering**: the `#:render` procedure, which styles a parsed row's parts with theme
+   scopes and fits it to the picker's width.
+6. **Open**: the `live-picker!` call, with its subprocess source, `core:stdlib`'s picker
+   keymap, whose keys also open a match in a new tab or a split, and the query the
+   renderer highlights.
+7. **Commands**: one typed command and one key-bindable command, both calling the same
    function.
-7. **Key binding**: the default `g /`.
+8. **Key binding**: the default `g /`.
 
 ## Conventions
 
@@ -114,7 +118,8 @@ editor through `tmux` instead:
   directory.
 - A case renders a config template from `tests/config/`, starts `hume`, sends keys, and
   asserts on `tmux capture-pane` output with `wait_for`, `wait_for_status` and
-  `expect_absent`.
+  `expect_absent`. `wait_for_styled` reads the capture with its colors, and the theme in
+  `tests/fixtures/themes/`, one color per scope, tells which scope colored which text.
 - Fixture scripts in `tests/fixtures/bin/` stand in for the real search binary, so a case's
   expected output is exact bytes that don't change with the binary's version.
 - `./tests/run.sh` runs every case; `./tests/run.sh <name>…` runs only the named ones.

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Two vimgrep-null rows. The first, selected when the picker opens, is
+# indented: byte-col 9 is "TODO" on line 2, after four spaces and "let ".
+# The second has a multibyte "é" before its match: byte-col 14 is "TODO"
+# on line 3.
+printf 'tests/fixtures/tree/indented.txt\x00%d:%d:%s\n' 2 9 "    let TODO = 1;"
+printf 'tests/fixtures/tree/utf8.txt\x00%d:%d:%s\n' 3 14 "héllo world TODO"

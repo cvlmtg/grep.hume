@@ -1,0 +1,6 @@
+# One distinct foreground per scope a result row uses, so a case can tell
+# from the captured pane which scope colored which part of the row.
+"comment" = { fg = "#0a0b0c" }
+"constant.numeric" = { fg = "#0d0e0f" }
+"ui.cursor.match.search" = { fg = "#101112" }
+"ui.text.focus" = { fg = "#131415" }

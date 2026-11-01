@@ -125,6 +125,7 @@ _launch_hume() {
     local data_dir="$WORKDIR/data/hume"
     mkdir -p "$data_dir/plugins/${PLUGIN_NAME%/*}"
     ln -s "$REPO_ROOT" "$data_dir/plugins/$PLUGIN_NAME"
+    ln -s "$FIXTURES_DIR/themes" "$data_dir/themes" # for a config that sets 'theme
     export XDG_DATA_HOME="$WORKDIR/data"
 
     local config="$WORKDIR/init.scm"
@@ -220,12 +221,31 @@ send() {
 # wait_for <substring> [timeout-seconds] — polls the whole captured pane.
 # Prints the pane and fails on timeout, so a CI failure is diagnosable.
 wait_for() {
-    local pattern="$1" timeout="${2:-5}" start
+    _wait_for_capture "$1" "${2:-5}"
+}
+
+# wait_for_styled <substring> [timeout-seconds] — wait_for over the pane
+# captured with its colors, where text in foreground R,G,B reads
+# "$(fg R G B)text$FG_DEFAULT".
+wait_for_styled() {
+    _wait_for_capture "$1" "${2:-5}" -e
+}
+
+fg() {
+    printf '\e[38;2;%s;%s;%sm' "$1" "$2" "$3"
+}
+FG_DEFAULT=$'\e[39m'
+
+# _wait_for_capture <substring> <timeout-seconds> [capture-pane flags...]
+# The timeout report shows ESC as ^[ so a styled capture stays readable.
+_wait_for_capture() {
+    local pattern="$1" timeout="$2" start
+    shift 2
     start="$(date +%s)"
-    while ! tmux capture-pane -t "$SESSION" -p | grep -qF "$pattern"; do
+    while ! tmux capture-pane -t "$SESSION" -p "$@" | grep -qF -- "$pattern"; do
         if (( $(date +%s) - start >= timeout )); then
-            echo "TIMEOUT waiting for: $pattern" >&2
-            tmux capture-pane -t "$SESSION" -p >&2
+            echo "TIMEOUT waiting for: ${pattern//$'\e'/^[}" >&2
+            tmux capture-pane -t "$SESSION" -p "$@" | sed $'s/\e/^[/g' >&2
             return 1
         fi
         sleep 0.1

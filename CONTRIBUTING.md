@@ -98,11 +98,12 @@ The suite covers nearly everything HUME's own plugin API and this plugin's confi
 validation can be asserted on: both typed and normal commands, selection seeding
 (including the newline-clamp case), UTF-8 column math, all three output shapes, a
 malformed row, load-time config errors, `Esc` actually killing the spawned search, `Ctrl+t`
-placing the match in a new tab rather than the current pane, and a truncated display row
-still parsing from its full untruncated payload. One case runs against the real `rg` for
-`--smart-case` and one row per matching line, and one against the real `grep` for skipping
-`.git`; every other case fixes the search program's output via a fixture script, so the
-suite doesn't drift with the search programs' own versions.
+placing the match in a new tab rather than the current pane, a truncated display row
+still parsing from its full untruncated payload, each row part's theme scope on the
+selected and other rows, and a long directory shortened from its front. One case runs
+against the real `rg` for `--smart-case` and one row per matching line, and one against the
+real `grep` for skipping `.git`; every other case fixes the search program's output via a
+fixture script, so the suite doesn't drift with the search programs' own versions.
 
 What's left to check by hand, because it needs a platform this suite doesn't run on:
 
