@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# A very long minified line: the displayed row is truncated, but on-select
-# still receives the untruncated payload, so Enter must land on the exact
-# column even though it's past where the display was clipped.
+# A very long minified line: the displayed row is truncated, but Enter's
+# binding still receives the untruncated payload, so Enter must land on the
+# exact column even though it's past where the display was clipped.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 source ./lib.sh

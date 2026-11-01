@@ -10,7 +10,7 @@ falling back to `grep`. Any other program can be configured (see below).
 
 ## Requirements
 
-- HUME 0.17.0 or later.
+- HUME 0.18.0 or later.
 - `rg` or `grep` on `PATH` (or another program you configure) — checked at
   load; a missing or misconfigured binary errors immediately instead of
   producing a silently empty picker.
@@ -58,11 +58,11 @@ Typed commands:
 
 Inside the picker: type to search (each keystroke re-runs the search after a
 short debounce), `Up`/`Down`/`Ctrl+p`/`Ctrl+n` move the selection,
-`PageUp`/`PageDown`/`Ctrl+u`/`Ctrl+d` page it, `Backspace` edits the pattern,
-`Enter`/`Ctrl+o` jumps to the match's file, line, and column in the current
-pane, `Ctrl+t`/`Ctrl+v`/`Ctrl+s` jump there in a new tab, a side-by-side
-split, or a stacked split instead, `Esc` dismisses (killing the search if
-one is still running).
+`PageUp`/`PageDown` page it, `Ctrl+u`/`Ctrl+d` move it half a page,
+`Backspace` edits the pattern, `Enter`/`Ctrl+o` jumps to the match's file,
+line, and column in the current pane, `Ctrl+t`/`Ctrl+v`/`Ctrl+s` jump there
+in a new tab, a side-by-side split, or a stacked split instead, `Esc`
+dismisses (killing the search if one is still running).
 
 ## Config
 

@@ -57,8 +57,8 @@ The file reads top to bottom in the order HUME evaluates it:
 3. **Selection seeding**: turning the primary selection into the initial query.
 4. **Result-row parsing**: runs only on the row the user picks, never per row, so the
    picker stays fast however many rows a search streams in.
-5. **Open**: the `live-picker!` call, with its subprocess source and the open-in-tab or
-   split actions.
+5. **Open**: the `live-picker!` call, with its subprocess source and `core:stdlib`'s picker
+   keymap, whose keys also open a match in a new tab or a split.
 6. **Commands**: one typed command and one key-bindable command, both calling the same
    function.
 7. **Key binding**: the default `g /`.

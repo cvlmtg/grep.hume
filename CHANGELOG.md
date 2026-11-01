@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Requires HUME 0.18.0 or later.
+
+- Breaking: the plugin needs HUME 0.18.0, whose pickers take a keymap. The picker keeps
+  its keys.
+
 ## [2.0.0] - 2026-10-28
 
 Requires HUME 0.17.0 or later.

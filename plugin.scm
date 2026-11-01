@@ -2,8 +2,8 @@
 
 (define grep/plugin "cvlmtg/grep.hume")
 
-(unless (hume-version>=? 0 17 0)
-  (error (string-append grep/plugin ": requires HUME 0.17.0 or later")))
+(unless (hume-version>=? 0 18 0)
+  (error (string-append grep/plugin ": requires HUME 0.18.0 or later")))
 
 (unless (member "core:stdlib" (declared-plugins))
   (error (string-append grep/plugin ": requires core:stdlib — (load-plugin! \"core:stdlib\") before (load-plugin! \"" grep/plugin "\")")))
@@ -142,11 +142,10 @@
         [(equal? grep/format 'vimgrep) (grep/parse-vimgrep-shaped-row row ":")]
         [else (grep/parse-grep-row row)]))
 
-;;; #f (Esc, or a placement action skipping an empty/not-yet-matching
-;;; picker — see `stdlib/buffer-actions`) is a no-op, not an error: only a
-;;; row that made it past that guard and still fails to parse is logged, and
-;;; so is a row whose line is gone from the file (`goto-location!` answers
-;;; #f and moves nothing).
+;;; #f (an accept key pressed while no row matches) is a no-op, not an
+;;; error: only a row that made it past that guard and still fails to parse
+;;; is logged, and so is a row whose line is gone from the file
+;;; (`goto-location!` answers #f and moves nothing).
 (define (grep/goto! row)
   (when row
     (let ([parsed (grep/parse-row row)])
@@ -166,9 +165,11 @@
 
 ;;; Opens the picker seeded with `seed` (possibly ""). Every query change
 ;;; re-runs `grep/program` with the query as its pattern; an empty query
-;;; clears the rows instead of searching.
+;;; clears the rows instead of searching. The keymap's Ctrl-t/v/s place and
+;;; focus a new tab or split before calling `grep/goto!`, which targets
+;;; `(focused-pane)`.
 (define (grep/open! pane seed)
-  (live-picker! pane grep/goto!
+  (live-picker! pane (call! "stdlib/picker-keymap" grep/goto!)
                 #:prompt "grep: "
                 #:query seed
                 ;; rg exits 1 for "no matches" — a normal outcome while
@@ -182,12 +183,7 @@
                 ;; A result row is "path:line:col:text" — the path is what
                 ;; the user is scanning for, not the match text trailing it,
                 ;; so an overlong row should drop from the end, not the front.
-                #:truncate 'tail
-                ;; Ctrl-o/t/v/s open the match in the current pane, a new
-                ;; tab, a side-by-side split, or a stacked split —
-                ;; `grep/goto!` always targets `(focused-pane)`, which
-                ;; these place and focus before calling it.
-                #:actions (call! "stdlib/buffer-actions" grep/goto!)))
+                #:truncate 'tail))
 
 ;; ── Commands ──────────────────────────────────────────────────────────────────
 

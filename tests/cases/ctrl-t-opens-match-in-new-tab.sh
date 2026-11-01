@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Ctrl-t (stdlib/buffer-actions, via #:actions) opens the selected match in a
-# new tab instead of the current pane — the original pane/tab keeps showing
+# Ctrl-t (stdlib/picker-keymap) opens the selected match in a new tab
+# instead of the current pane — the original pane/tab keeps showing
 # scratch.txt, unmoved.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
