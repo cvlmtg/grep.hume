@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## [4.0.0] - 2026-11-02
+
+Requires HUME 0.18.0 or later.
 
 - Breaking: the picker opens with `z /`, next to HUME's other pickers, in place of `g /`.
 - Works with HUME 0.18.0 as released, where 3.0.0's picker fails to open.
