@@ -188,12 +188,17 @@
          [byte-col (grep/hit-byte-col hit)]
          [text (grep/hit-text hit)]
          [col (and byte-col (number->string byte-col))]
-         [match (grep/match-start text (and byte-col (grep/byte-col->char-col text byte-col)) query)]
+         [indent (- (string-length text) (string-length (trim-start text)))]
+         ;; As much of the text as the row can show, so a long line costs
+         ;; no more than a short one. A match past it is off screen and
+         ;; gets no highlight. The extra cell is for the "…" `string-fit`
+         ;; adds when it cuts.
+         [window (string-fit text (+ (string-width (substring text 0 indent)) budget 1) 'tail)]
+         [match (grep/match-start window (and byte-col (grep/byte-col->char-col text byte-col)) query)]
          ;; Indentation stops at the match, so a query starting with spaces
          ;; still shows what it matched.
-         [indent (- (string-length text) (string-length (trim-start text)))]
          [cut (min indent (or match indent))]
-         [shown (substring text cut)]
+         [shown (substring window cut)]
          [name (file-name path)]
          [base (if (and (not (equal? name "")) (ends-with? path name)) name path)]
          [location (string-append ":" line (if col (string-append ":" col) "") ":")]
