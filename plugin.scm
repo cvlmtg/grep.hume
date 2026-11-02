@@ -19,29 +19,20 @@
 (define grep/program
   (call! "stdlib/config-string" grep/plugin grep/cfg 'program grep/default-program))
 
-;;; Checked at load so a bad 'program errors immediately, not as a silent
-;;; empty picker from inside a debounce timer later.
 (unless (find-program grep/program)
   (error (string-append grep/plugin ": 'program (" grep/program
                          ") is not on PATH — install it, or set 'program to one that is")))
 
-;;; Basename with a ".exe" suffix stripped, case-folded only for that check
-;;; — `find-program` resolves an unqualified "rg" through Windows' PATHEXT,
-;;; whose default casing is ".EXE", so a case-sensitive strip would miss the
-;;; plugin's own zero-config default there. A bare (non-".exe") basename
-;;; still compares case-sensitively — a program's exact name matters on the
-;;; case-sensitive filesystems where no ".exe" is involved.
-(define grep/program-name
-  (let ([base (file-name grep/program)])
-    (if (ends-with? (string-downcase base) ".exe")
-        (string-downcase (substring base 0 (- (string-length base) 4)))
-        base)))
-
 ;;; Output shape to parse — see README's Config table and Known limitations
 ;;; for what each of the three means. Defaults to whichever shape matches
 ;;; `program`; only a third program, or an 'args override dropping
-;;; `--null`, needs 'format set explicitly.
-(define grep/default-format (if (equal? grep/program-name "rg") 'vimgrep-null 'grep))
+;;; `--null`, needs 'format set explicitly. Windows' PATHEXT resolves "rg"
+;;; to an "rg.exe" in any casing.
+(define grep/default-format
+  (let ([base (file-name grep/program)])
+    (if (or (equal? base "rg") (equal? (string-downcase base) "rg.exe"))
+        'vimgrep-null
+        'grep)))
 (define grep/format
   (call! "stdlib/config-enum" grep/plugin grep/cfg 'format grep/default-format
          '(vimgrep-null vimgrep grep)))
@@ -52,13 +43,11 @@
 ;;; at its first match, where `--vimgrep` repeats the line once per match.
 ;;; See README's Known limitations for what `-m`/`-M` actually bound.
 (define grep/default-args
-  (cond [(equal? grep/format 'vimgrep-null)
-         '("--column" "--with-filename" "--no-heading" "--color" "never" "--null" "--smart-case"
-           "-m" "1000" "-M" "512" "--max-columns-preview" "--")]
-        [(equal? grep/format 'vimgrep)
-         '("--column" "--with-filename" "--no-heading" "--color" "never" "--smart-case"
-           "-m" "1000" "-M" "512" "--max-columns-preview" "--")]
-        [else '("-rnI" "-i" "--exclude-dir=.git" "--color=never" "--")]))
+  (if (equal? grep/format 'grep)
+      '("-rnI" "-i" "--exclude-dir=.git" "--color=never" "--")
+      (append '("--column" "--with-filename" "--no-heading" "--color" "never")
+              (if (equal? grep/format 'vimgrep-null) '("--null") '())
+              '("--smart-case" "-m" "1000" "-M" "512" "--max-columns-preview" "--"))))
 (define grep/args
   (call! "stdlib/config-list" grep/plugin grep/cfg 'args grep/default-args))
 
@@ -74,23 +63,22 @@
 ;;; or a single-character selection — anchor = head either way, nothing
 ;;; distinguishes them) or spans more than one line.
 (define (grep/primary-selection-text pane)
-  (let* ([primary (call! "stdlib/primary-selection" (buffer-selections pane))]
-         [collapsed? (or (not primary)
-                         (= (selection-anchor primary) (selection-head primary)))])
-    (and (not collapsed?)
+  (let ([primary (call! "stdlib/primary-selection" (buffer-selections pane))])
+    (and primary
+         (not (= (selection-anchor primary) (selection-head primary)))
          (let* ([start (selection-start-char primary)]
                 [end (selection-end-char primary)]
-                [line (char-offset->line pane start)])
+                [line (char-offset->line pane start)]
+                [line-offset (line->char-offset pane line)]
+                [line-text (car (buffer-lines pane
+                                              #:range (hash 'start-line line 'end-line (+ line 1))))])
            (and (= line (char-offset->line pane (- end 1)))
-                (let* ([line-offset (line->char-offset pane line)]
-                       [line-text (car (buffer-lines pane
-                                                     #:range (hash 'start-line line 'end-line (+ line 1))))])
-                  ;; A whole-line selection ("x"/"X"/Ctrl+x) covers the
-                  ;; line's trailing "\n", but `buffer-lines` strips it —
-                  ;; clamp to the stripped length instead of overrunning it.
-                  (substring line-text
-                             (- start line-offset)
-                             (min (- end line-offset) (string-length line-text)))))))))
+                ;; A whole-line selection ("x"/"X"/Ctrl+x) covers the
+                ;; line's trailing "\n", but `buffer-lines` strips it —
+                ;; clamp to the stripped length instead of overrunning it.
+                (substring line-text
+                           (- start line-offset)
+                           (min (- end line-offset) (string-length line-text))))))))
 
 ;; ── Result-row parsing ────────────────────────────────────────────────────────
 
@@ -102,23 +90,25 @@
 
 (define grep/nul "\x0;")
 
+;;; A parsed result row. `byte-col` is #f when the format reports no column.
+(struct grep/hit (path line byte-col text))
+
 ;;; 0-based char index at 1-based UTF-8 byte offset `byte-col` (rg
 ;;; `--vimgrep`'s column unit) — `goto-location!` counts chars, so a
-;;; multi-byte character before the match needs this conversion. `byte-col`
-;;; 0 (grep format's "no column") and 1 both land at char 0. The `min`
-;;; clamp is required, not defensive: an out-of-range `end` on
-;;; `bytes->string/utf8` is an unrecoverable slice panic, not a catchable
-;;; Steel error.
+;;; multi-byte character before the match needs this conversion. A
+;;; `byte-col` of #f or 1 lands at char 0. The `min` clamp is required, not
+;;; defensive: an out-of-range `end` on `bytes->string/utf8` is an
+;;; unrecoverable slice panic, not a catchable Steel error.
 (define (grep/byte-col->char-col line byte-col)
-  (if (<= byte-col 1)
-      0
+  (if (and byte-col (> byte-col 1))
       (let ([bytes (string->bytes line)])
-        (string-length (bytes->string/utf8 bytes 0 (min (- byte-col 1) (bytes-length bytes)))))))
+        (string-length (bytes->string/utf8 bytes 0 (min (- byte-col 1) (bytes-length bytes)))))
+      0))
 
 ;;; Shared by both vimgrep shapes — they differ only in the path
 ;;; terminator (":" vs NUL); line/col/text are colon-separated either way.
-;;; `#f` if the row doesn't split into exactly these parts, or a numeric
-;;; field fails to parse (a malformed row, not a HUME/rg bug).
+;;; `#f` if the row doesn't split into these parts, or a numeric field
+;;; fails to parse (a malformed row, not a HUME/rg bug).
 (define (grep/parse-vimgrep-shaped-row row path-sep)
   (let* ([path+rest (grep/split-once row path-sep)]
          [line+rest (and path+rest (grep/split-once (cadr path+rest) ":"))]
@@ -126,38 +116,35 @@
          [line (and col+text (string->number (car line+rest)))]
          [byte-col (and col+text (string->number (car col+text)))])
     (and (integer? line) (integer? byte-col)
-         (list (car path+rest) line byte-col (cadr col+text)))))
+         (grep/hit (car path+rest) line byte-col (cadr col+text)))))
 
-;;; `path:line:text` → `(path line 0 text)` — byte-col 0 means "no column",
-;;; read by `grep/byte-col->char-col` as start of line.
+;;; `path:line:text`, which has no column.
 (define (grep/parse-grep-row row)
   (let* ([path+rest (grep/split-once row ":")]
          [line+text (and path+rest (grep/split-once (cadr path+rest) ":"))]
          [line (and line+text (string->number (car line+text)))])
     (and (integer? line)
-         (list (car path+rest) line 0 (cadr line+text)))))
+         (grep/hit (car path+rest) line #f (cadr line+text)))))
 
 (define (grep/parse-row row)
   (cond [(equal? grep/format 'vimgrep-null) (grep/parse-vimgrep-shaped-row row grep/nul)]
         [(equal? grep/format 'vimgrep) (grep/parse-vimgrep-shaped-row row ":")]
         [else (grep/parse-grep-row row)]))
 
-;;; #f (an accept key pressed while no row matches) is a no-op, not an
-;;; error: only a row that made it past that guard and still fails to parse
-;;; is logged, and so is a row whose line is gone from the file
-;;; (`goto-location!` answers #f and moves nothing).
+;;; #f (an accept key pressed while no row matches) is a no-op.
+;;; `goto-location!` answers #f, moving nothing, when the row's line is gone
+;;; from the file.
 (define (grep/goto! row)
   (when row
-    (let ([parsed (grep/parse-row row)])
-      (if parsed
-          (let ([path (car parsed)]
-                [line (cadr parsed)]
-                [byte-col (caddr parsed)]
-                [text (cadddr parsed)])
+    (let ([hit (grep/parse-row row)])
+      (if hit
+          (let ([path (grep/hit-path hit)]
+                [line (grep/hit-line hit)])
             (unless (goto-location! (focused-pane)
                                     (hash 'target path
                                           'line (- line 1)
-                                          'char-col (grep/byte-col->char-col text byte-col)))
+                                          'char-col (grep/byte-col->char-col (grep/hit-text hit)
+                                                                             (grep/hit-byte-col hit))))
               (log! 'warning (string-append "grep: " path " has no line " (number->string line)))))
           (log! 'error (string-append "grep: could not parse result row: " row))))))
 
@@ -195,18 +182,18 @@
 ;;; its text without indentation. A row wider than `budget` loses the front
 ;;; of its directory first, until the file name, the location and up to half
 ;;; the budget of text fit; `#:truncate 'tail` cuts whatever is still over.
-(define (grep/row-display parsed budget query)
-  (let* ([path (car parsed)]
-         [line (number->string (cadr parsed))]
-         [byte-col (caddr parsed)]
-         [text (cadddr parsed)]
-         [col (and (not (equal? grep/format 'grep)) (number->string byte-col))]
-         [match (grep/match-start text (and col (grep/byte-col->char-col text byte-col)) query)]
+(define (grep/row-display hit budget query)
+  (let* ([path (grep/hit-path hit)]
+         [line (number->string (grep/hit-line hit))]
+         [byte-col (grep/hit-byte-col hit)]
+         [text (grep/hit-text hit)]
+         [col (and byte-col (number->string byte-col))]
+         [match (grep/match-start text (and byte-col (grep/byte-col->char-col text byte-col)) query)]
          ;; Indentation stops at the match, so a query starting with spaces
          ;; still shows what it matched.
          [indent (- (string-length text) (string-length (trim-start text)))]
-         [cut (if match (min indent match) indent)]
-         [shown (substring text cut (string-length text))]
+         [cut (min indent (or match indent))]
+         [shown (substring text cut)]
          [name (file-name path)]
          [base (if (and (not (equal? name "")) (ends-with? path name)) name path)]
          [location (string-append ":" line (if col (string-append ":" col) "") ":")]
@@ -215,20 +202,20 @@
                               (min (string-width shown) (quotient budget 2))))]
          [dir (string-fit (substring path 0 (- (string-length path) (string-length base)))
                           dir-cells 'head)]
-         [line-start (+ (string-length dir) (string-length base) 1)]
+         [prefix (+ (string-length dir) (string-length base))]
+         [line-start (+ prefix 1)]
          [line-end (+ line-start (string-length line))]
-         [text-start (+ (string-length dir) (string-length base) (string-length location))])
+         [text-start (+ prefix (string-length location))]
+         [match-at (and match (+ text-start (- match cut)))])
     (hash 'text (string-append dir base location shown)
           'spans (append
                   (if (equal? dir "") '() (list (grep/part-span 0 (string-length dir) "comment")))
                   (list (grep/part-span line-start line-end "constant.numeric"))
                   (if col
-                      (list (grep/part-span (+ line-end 1) (+ line-end 1 (string-length col))
-                                            "constant.numeric"))
+                      (list (grep/part-span (+ line-end 1) (- text-start 1) "constant.numeric"))
                       '())
-                  (if match
-                      (list (grep/span (+ text-start (- match cut))
-                                       (+ text-start (- match cut) (string-length query))
+                  (if match-at
+                      (list (grep/span match-at (+ match-at (string-length query))
                                        "ui.cursor.match.search"))
                       '())))))
 
@@ -236,8 +223,8 @@
 ;;; as the source gave it, and `grep/goto!` logs it if picked.
 (define (grep/render-rows rows budget query)
   (map (lambda (row)
-         (let ([parsed (grep/parse-row (cdr row))])
-           (if parsed (grep/row-display parsed budget query) (car row))))
+         (let ([hit (grep/parse-row (cdr row))])
+           (if hit (grep/row-display hit budget query) (car row))))
        rows))
 
 ;; ── Open ──────────────────────────────────────────────────────────────────────
@@ -264,9 +251,6 @@
                             #:ok-exit-codes '(0 1))
                   #:debounce-ms grep/debounce-ms
                   #:render (lambda (rows budget) (grep/render-rows rows budget searched))
-                  ;; A result row is "path:line:col:text" — the path is what
-                  ;; the user is scanning for, not the match text trailing it,
-                  ;; so an overlong row should drop from the end, not the front.
                   #:truncate 'tail)))
 
 ;; ── Commands ──────────────────────────────────────────────────────────────────
