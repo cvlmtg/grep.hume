@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# `g /` seeds from a one-line, non-collapsed selection — including one
+# `z /` seeds from a one-line, non-collapsed selection — including one
 # extended through the trailing newline (x/X/Ctrl+x). A bare cursor or a
 # multi-line selection opens the picker empty instead.
 set -euo pipefail
@@ -13,7 +13,7 @@ start_hume config/fake.scm "$FIXTURES_DIR/tree/utf8.txt" \
     PROGRAM="$FIXTURES_DIR/bin/fakegrep" FORMAT=vimgrep-null
 send "jj"  # line 1 -> line 3 ("héllo world TODO")
 send "x"
-send "g/"
+send "z/"
 wait_for "grep: héllo world TODO"
 
 send Escape
@@ -26,7 +26,7 @@ stop_hume
 # contain the fixture's own canned row text and produce a false pass.
 start_hume config/fake.scm "$FIXTURES_DIR/tree/scratch.txt" \
     PROGRAM="$FIXTURES_DIR/bin/fakegrep" FORMAT=vimgrep-null
-send "g/"
+send "z/"
 wait_for "grep: "
 wait_for "0/0"
 expect_absent "héllo world TODO"
@@ -37,7 +37,7 @@ start_hume config/fake.scm "$FIXTURES_DIR/tree/scratch.txt" \
     PROGRAM="$FIXTURES_DIR/bin/fakegrep" FORMAT=vimgrep-null
 send C-x
 send C-x
-send "g/"
+send "z/"
 wait_for "grep: "
 wait_for "0/0"
 expect_absent "héllo world TODO"

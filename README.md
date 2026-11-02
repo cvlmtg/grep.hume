@@ -51,7 +51,7 @@ Run `:plum-update-plugins` after changing or removing a `#:ref`.
 
 | Key   | Command       | Effect |
 |-------|---------------|--------|
-| `g /` | `grep/picker` | Live-grep, seeded with the primary selection if it's non-collapsed and confined to one line |
+| `z /` | `grep/picker` | Live-grep, seeded with the primary selection if it's non-collapsed and confined to one line |
 
 Typed commands:
 

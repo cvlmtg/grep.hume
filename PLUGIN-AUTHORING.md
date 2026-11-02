@@ -39,8 +39,8 @@ Marking the repository as a template on GitHub turns step 1 into "Use this templ
   path PLUM clones from and the install directory name under the data directory.
 - **No `manifest.scm`**: a plugin without one loads eagerly, which this plugin needs. Its
   only entry point besides its `:grep` and `grep/picker` commands is a key binding it sets
-  itself (`g /`), and a plugin's own `bind-key!` call only runs once the plugin's body has
-  been evaluated. A `manifest.scm` would make `load-plugin!` lazy and leave `g /` unbound
+  itself (`z /`), and a plugin's own `bind-key!` call only runs once the plugin's body has
+  been evaluated. A `manifest.scm` would make `load-plugin!` lazy and leave `z /` unbound
   until a command triggered activation. A user who wants it lazy anyway can declare their
   own triggers; see [Choosing your own
   triggers](https://cvlmtg.github.io/HUME/plugins.html#choosing-your-own-triggers).
@@ -65,7 +65,7 @@ The file reads top to bottom in the order HUME evaluates it:
    renderer highlights.
 7. **Commands**: one typed command and one key-bindable command, both calling the same
    function.
-8. **Key binding**: the default `g /`.
+8. **Key binding**: the default `z /`.
 
 ## Conventions
 

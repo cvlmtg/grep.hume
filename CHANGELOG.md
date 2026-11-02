@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Breaking: the picker opens with `z /`, next to HUME's other pickers, in place of `g /`.
+
 ## [3.0.0] - 2026-11-02
 
 Requires HUME 0.18.0 or later.

@@ -281,4 +281,4 @@
 
 ;; ── Keybindings ───────────────────────────────────────────────────────────────
 ;; Extend mode falls through to the normal trie, so 'normal alone covers both.
-(bind-key! 'normal "g /" "grep/picker")
+(bind-key! 'normal "z /" "grep/picker")
