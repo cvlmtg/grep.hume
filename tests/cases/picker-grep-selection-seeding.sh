@@ -7,8 +7,8 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 source ./lib.sh
 
 # --- one-line selection through the trailing newline seeds the query ------
-# Needs utf8.txt's real multi-byte line 3 — the "héllo" is what exercises
-# the clamp this scenario is really about.
+# utf8.txt's line 3 has a multi-byte "é", which a byte count for the
+# selection's char range would cut short.
 start_hume config/fake.scm "$FIXTURES_DIR/tree/utf8.txt" \
     PROGRAM="$FIXTURES_DIR/bin/fakegrep" FORMAT=vimgrep-null
 send "jj"  # line 1 -> line 3 ("héllo world TODO")

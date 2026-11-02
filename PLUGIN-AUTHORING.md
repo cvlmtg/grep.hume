@@ -59,10 +59,9 @@ The file reads top to bottom in the order HUME evaluates it:
    view, never on every row a search streams in, so the picker stays fast however many rows
    arrive.
 5. **Row rendering**: the `#:render` procedure, which styles a parsed row's parts with theme
-   scopes and fits it to the picker's width.
-6. **Open**: the `live-picker!` call, with its subprocess source, `core:stdlib`'s picker
-   keymap, whose keys also open a match in a new tab or a split, and the query the
-   renderer highlights.
+   scopes, highlights the query its search matched, and fits the row to the picker's width.
+6. **Open**: the `live-picker!` call, with its subprocess source and `core:stdlib`'s picker
+   keymap, whose keys also open a match in a new tab or a split.
 7. **Commands**: one typed command and one key-bindable command, both calling the same
    function.
 8. **Key binding**: the default `z /`.

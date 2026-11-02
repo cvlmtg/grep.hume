@@ -66,19 +66,14 @@
   (let ([primary (call! "stdlib/primary-selection" (buffer-selections pane))])
     (and primary
          (not (= (selection-anchor primary) (selection-head primary)))
-         (let* ([start (selection-start-char primary)]
-                [end (selection-end-char primary)]
-                [line (char-offset->line pane start)]
-                [line-offset (line->char-offset pane line)]
-                [line-text (car (buffer-lines pane
-                                              #:range (hash 'start-line line 'end-line (+ line 1))))])
-           (and (= line (char-offset->line pane (- end 1)))
+         (let* ([text (buffer-text pane #:range (hash 'start-char (selection-start-char primary)
+                                                      'end-char (selection-end-char primary)))]
                 ;; A whole-line selection ("x"/"X"/Ctrl+x) covers the
-                ;; line's trailing "\n", but `buffer-lines` strips it —
-                ;; clamp to the stripped length instead of overrunning it.
-                (substring line-text
-                           (- start line-offset)
-                           (min (- end line-offset) (string-length line-text))))))))
+                ;; line's trailing "\n", which isn't part of the pattern.
+                [line (if (ends-with? text "\n")
+                          (substring text 0 (- (string-length text) 1))
+                          text)])
+           (and (not (grep/split-once line "\n")) line)))))
 
 ;; ── Result-row parsing ────────────────────────────────────────────────────────
 
@@ -224,8 +219,9 @@
                                        "ui.cursor.match.search"))
                       '())))))
 
-;;; `#:render` for a picker searching `query`: a row that doesn't parse shows
-;;; as the source gave it, and `grep/goto!` logs it if picked.
+;;; `#:render`, called with the query whose search produced `rows`: a row
+;;; that doesn't parse shows as the source gave it, and `grep/goto!` logs it
+;;; if picked.
 (define (grep/render-rows rows budget query)
   (map (lambda (row)
          (let ([hit (grep/parse-row (cdr row))])
@@ -240,23 +236,19 @@
 ;;; focus a new tab or split before calling `grep/goto!`, which targets
 ;;; `(focused-pane)`.
 (define (grep/open! pane seed)
-  ;; The query the shown rows answer: the source sets it as it starts a
-  ;; search, and every row arriving after that is that search's.
-  (let ([searched seed])
-    (live-picker! pane (call! "stdlib/picker-keymap" grep/goto!)
-                  #:prompt "grep: "
-                  #:query seed
-                  ;; rg exits 1 for "no matches" — a normal outcome while
-                  ;; typing, not a failure worth a message-log entry.
-                  #:source (picker-command-source
-                            (lambda (query)
-                              (set! searched query)
-                              (and (not (equal? query ""))
-                                   (cons grep/program (append grep/args (list query ".")))))
-                            #:ok-exit-codes '(0 1))
-                  #:debounce-ms grep/debounce-ms
-                  #:render (lambda (rows budget) (grep/render-rows rows budget searched))
-                  #:truncate 'tail)))
+  (live-picker! pane (call! "stdlib/picker-keymap" grep/goto!)
+                #:prompt "grep: "
+                #:query seed
+                ;; rg exits 1 for "no matches" — a normal outcome while
+                ;; typing, not a failure worth a message-log entry.
+                #:source (picker-command-source
+                          (lambda (query)
+                            (and (not (equal? query ""))
+                                 (cons grep/program (append grep/args (list query ".")))))
+                          #:ok-exit-codes '(0 1))
+                #:debounce-ms grep/debounce-ms
+                #:render grep/render-rows
+                #:truncate 'tail))
 
 ;; ── Commands ──────────────────────────────────────────────────────────────────
 
