@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# A pattern with no matches (rg's own exit-1 convention) leaves :messages
-# clean — no error-level log entry from the plugin.
+# A pattern with no matches (rg's own exit-1 convention) logs nothing:
+# :messages answers "No messages" instead of opening the log.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 source ./lib.sh
@@ -20,5 +20,4 @@ sleep 0.3
 
 send Escape
 send ":messages" Enter
-wait_for "[messages]"
-expect_absent "[error]"
+wait_for_status "No messages"
